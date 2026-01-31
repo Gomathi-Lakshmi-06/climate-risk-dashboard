@@ -1,0 +1,281 @@
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.18s, color 0.18s;
+}
+
+body {
+  background: linear-gradient(120deg, #1d2838 0%, #0056a3 100%);
+  color: #f4f7fa;
+  min-height: 100vh;
+  padding-bottom: 0;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 8vw;
+  background: rgba(26, 39, 62, 0.94);
+  backdrop-filter: blur(8px);
+  border-radius: 0px 0px 18px 18px;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.10);
+  margin-bottom: 0.5em;
+  min-height: 60px;
+}
+
+nav h2 {
+  color: #31e6ff;
+  letter-spacing: 2px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1;
+  user-select: none;
+}
+
+nav div {
+  display: flex;
+  gap: 8px;
+}
+
+nav a {
+  color: #e9fdff;
+  text-decoration: none;
+  margin: 0;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 1.01rem;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  border: 1px solid transparent;
+}
+
+nav a:hover, nav a.active {
+  color: #0b2547;
+  background: linear-gradient(90deg, #4ef3ff 25%, #00eafd 100%);
+  box-shadow: 0 2px 10px #4ef3ff38;
+  border-color: #63ffff77;
+}
+
+.container {
+  padding: 36px 3vw 24px 3vw;
+  max-width: 1050px;
+  margin: 0 auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: rgba(17,31,62,0.13);
+  border-radius: 18px;
+  margin-top: 24px;
+  box-shadow: 0 2px 22px 0 #00a6d633;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px 0 0 0;
+}
+
+.title h1 {
+  font-size: 2.09rem;
+  background: linear-gradient(90deg, #53fff6 30%, #3e77ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  margin-bottom: 7px;
+  line-height: 1.17;
+}
+
+.title p {
+  color: #b3daf7;
+  font-size: 1.08rem;
+  line-height: 1.46;
+  margin-inline: 10px;
+  padding: 0 0 2px 0;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px 18px;
+  justify-items: center;
+  margin-top: 8px;
+}
+
+.card {
+  background: rgba(255,255,255,0.11);
+  width: 100%;
+  min-width: 0;
+  padding: 18px 14px 16px 14px;
+  border-radius: 17px;
+  text-align: left;
+  box-shadow: 0 2px 13px rgba(0,40,90,.13), 0 1px 2px #16e3ff18;
+  transition: transform 0.18s, box-shadow 0.18s, border 0.15s;
+  border: 1.2px solid rgba(78,243,255,0.06);
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.50em;
+  position: relative;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-3px) scale(1.021) rotate(-0.5deg);
+  box-shadow: 0 6px 32px rgba(0,40,90,0.13), 0 5px 15px #00eaff31;
+  border-color: #37e6fd;
+  background: rgba(250,255,255,0.15);
+}
+
+.card h3 {
+  margin-bottom: 2px;
+  font-size: 1.12rem;
+  color: #24d6ff;
+  letter-spacing: 0.4px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card p {
+  color: #e2f8fd;
+  font-size: 0.96rem;
+  line-height: 1.5;
+  margin-bottom: 1px;
+}
+
+.card .status {
+  font-weight: bold;
+  font-size: 1.01rem;
+}
+
+.card .risk-details {
+  color: #7ad7f7;
+  font-size: 0.92rem;
+  margin-top: 1px;
+}
+
+.card .trend {
+  font-size: 0.95rem;
+  color: #ffad7b;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+footer {
+  text-align: center;
+  padding: 12px 5px 11px 5px;
+  background: rgba(20, 30, 48, 0.92);
+  margin-top: 36px;
+  color: #90c9fa;
+  font-size: 0.97rem;
+  border-radius: 12px 12px 0px 0px;
+  backdrop-filter: blur(1.5px);
+  box-shadow: 0 -1.5px 10px #004e9255;
+  opacity: 0.92;
+}
+
+@media (max-width: 980px) {
+  .container {
+    padding: 16px 8px 12px 8px;
+    margin-top: 13px;
+  }
+  .title h1 {
+    font-size: 1.3rem;
+  }
+  .title p {
+    font-size: 0.91rem;
+  }
+}
+
+@media (max-width: 720px) {
+  nav {flex-direction: column; gap: 11px; padding: 10px 4vw;}
+  .container {padding: 8px 3vw 12px 3vw;}
+  .cards {gap: 12px;}
+}
+
+@media (max-width: 600px) {
+  nav { flex-direction: column; gap: 7px; padding: 6px 2vw; min-height: 45px; }
+  nav h2 { font-size: 1.09rem; }
+  .title h1 { font-size: 1.03rem;}
+  .title p { font-size: 0.81rem;}
+  .container { margin-top: 10px; padding: 4px 1.5vw 7px 1.5vw; border-radius: 8px;}
+  .cards {grid-template-columns: 1fr; gap: 9px; margin-top: 0;}
+  .card { padding: 10px 8px 12px 8px; border-radius: 10px;}
+  footer { font-size: 0.90rem; border-radius: 7px 7px 0px 0px; margin-top: 15px;}
+}
+</style>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard | Climate Risk Dashboard</title>
+<!-- paste COMMON STYLE here -->
+</head>
+<body>
+
+<nav>
+  <h2>🌍 <span style="color:#b1eaff;">ClimateRisk</span></h2>
+  <div>
+    <a href="index.html">Home</a>
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="flood.html">Flood</a>
+    <a href="heat.html">Heat</a>
+    <a href="response.html">Response</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="title">
+    <h1>Risk Dashboard: Real-time Climate Warnings</h1>
+    <p>Summary of current climate hazards and safety levels for your region</p>
+  </div>
+  <div class="cards">
+    <div class="card" style="border-top: 4px solid #24d6ff;">
+      <h3>🌊 Flood Level</h3>
+      <span class="status">Status: <span style="color:#31e6ff;">Moderate</span></span>
+      <div class="risk-details">River levels rising.<br>Rainfall: 28mm past 24hr</div>
+      <div class="trend">⚠️ Upward Trend</div>
+    </div>
+    <div class="card" style="border-top: 4px solid #ff9572;">
+      <h3>🔥 Heat Level</h3>
+      <span class="status">Status: <span style="color:#ffad72;">High</span></span>
+      <div class="risk-details">Peak: 36&deg;C today<br>Humidity: 62%</div>
+      <div class="trend">💡 Heatwave alert in effect</div>
+    </div>
+    <div class="card" style="border-top: 4px solid #5af39b;">
+      <h3>🚦 Overall Risk</h3>
+      <span class="status">Status: <span style="color:#5af39b;">Alert</span></span>
+      <div class="risk-details">Combined flood &amp; heat; extra caution advised</div>
+      <div class="trend">🚨 Stay tuned for updates</div>
+    </div>
+    <div class="card" style="border-top: 4px solid #ffe44e;">
+      <h3>📍 Latest Shelter Openings</h3>
+      <span class="status">Now open: 2 local community centers</span>
+      <div class="risk-details">Nearest: Riverside Hall (1.5km) <br> Evacuation: Not required</div>
+      <div class="trend" style="color:#ffe44e;">🗺️ View Directions</div>
+    </div>
+    <div class="card" style="border-top: 4px solid #bb96fe;">
+      <h3>📣 Recent Alerts</h3>
+      <span class="status">Last: 16:05&nbsp; - &nbsp;<span style="color:#bb96fe;">Stay hydrated</span></span>
+      <div class="risk-details">Flood advisory issued at 13:40<br>Heat guidance issued at 16:05</div>
+      <div class="trend" style="color:#bb96fe;">📡 All clear for lightning</div>
+    </div>
+  </div>
+</div>
+
+<footer>Web Programming Project &nbsp;</span></footer>
+</body>
+</html>

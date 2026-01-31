@@ -14,11 +14,9 @@ body {
   background: linear-gradient(120deg, #1d2838 0%, #0056a3 100%);
   color: #f4f7fa;
   min-height: 100vh;
-  /* Reduce vertical empty space for compact feel */
   padding-bottom: 0;
 }
 
-/* Navigation Bar */
 nav {
   display: flex;
   justify-content: space-between;
@@ -68,7 +66,6 @@ nav a:hover, nav a.active {
   border-color: #63ffff77;
 }
 
-/* Main Content Container */
 .container {
   padding: 36px 3vw 28px 3vw;
   max-width: 1050px;
@@ -82,7 +79,6 @@ nav a:hover, nav a.active {
   box-shadow: 0 2px 22px 0 #00a6d633;
 }
 
-/* Title Section */
 .title {
   text-align: center;
   margin-bottom: 20px;
@@ -110,7 +106,6 @@ nav a:hover, nav a.active {
   padding: 0 0 2px 0;
 }
 
-/* Cards Section */
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -232,17 +227,16 @@ footer {
 <!DOCTYPE html>
 <html>
 <head>
-<title>Home | Climate Risk Dashboard</title>
-<!-- paste COMMON STYLE here -->
+<title>Flood | Climate Risk Dashboard</title>
 </head>
 <body>
 
 <nav>
   <h2>🌍 <span style="color:#b1eaff;">ClimateRisk</span></h2>
   <div>
-    <a href="index.html" class="active">Home</a>
+    <a href="index.html">Home</a>
     <a href="dashboard.html">Dashboard</a>
-    <a href="flood.html">Flood</a>
+    <a href="flood.html" class="active">Flood</a>
     <a href="heat.html">Heat</a>
     <a href="response.html">Response</a>
   </div>
@@ -250,25 +244,36 @@ footer {
 
 <div class="container">
   <div class="title">
-    <h1>Climate Risk & Disaster Management Dashboard</h1>
-    <p>Monitoring climate threats to protect lives and communities</p>
+    <h1>Flood Risk & Awareness Dashboard</h1>
+    <p>Real-time flood alerts, risk levels, and essential safety resources for your community</p>
   </div>
   <div class="cards">
     <div class="card" style="border-top: 4px solid #24d6ff;">
-      <h3>🌊 Flood Risk</h3>
-      <p>Early warnings and flood preparedness information to help communities and authorities respond quickly.</p>
+      <h3>🌊 Current Flood Risk</h3>
+      <p><span style="color:#31e6ff;font-weight:600;">Moderate</span> – River levels rising; coastal and low-lying areas are most vulnerable.<br>Rainfall: 28mm (last 24hr)</p>
+      <div style="color:#7ad7f7;font-size:0.92rem; margin-top:3px;">Update: 14:50 - Flood watch remains in effect</div>
     </div>
-    <div class="card" style="border-top: 4px solid #ff9572;">
-      <h3>🔥 Heat Alerts</h3>
-      <p>Heat wave early alerts and guidance to minimize health hazards in vulnerable populations.</p>
+    <div class="card" style="border-top: 4px solid #ffe44e;">
+      <h3>⚠️ Advisory & Precaution</h3>
+      <p>• Avoid low-lying or flood-prone areas<br>
+         • Do not walk or drive through flooded roads<br>
+         • Prepare emergency supplies and monitor local alerts</p>
+      <div style="color:#ffe44e;font-size:0.96rem;">Evacuation: <span style="font-weight:bold;">Not required</span> at this time</div>
     </div>
     <div class="card" style="border-top: 4px solid #5af39b;">
-      <h3>🚑 Disaster Response</h3>
-      <p>Guidelines for emergency planning, immediate safety actions, and essential community resources.</p>
+      <h3>🪧 Nearest Relief Centers</h3>
+      <p>Riverside Hall (1.5km) - <span style="color:#5af39b;">Open</span><br>Community Gym (2.2km) - <span style="color:#5af39b;">Standby</span></p>
+      <div style="color:#5af39b;font-size:0.93rem;">🗺️ <a href="#" style="color:#5af39b;text-decoration: underline;">View directions</a></div>
+    </div>
+    <div class="card" style="border-top: 4px solid #bb96fe;">
+      <h3>📣 Recent Flood Alerts</h3>
+      <p><span style="color:#bb96fe;font-weight:600;">13:40:</span> Flood advisory issued for downtown<br>
+         <span style="color:#bb96fe;font-weight:600;">14:50:</span> Flood watch continues;  stay updated</p>
+      <div style="color:#bb96fe;font-size:0.95rem;">📡 Lightning risk: <span style="color:#bbb;">Low</span></div>
     </div>
   </div>
 </div>
 
-<footer>Web Programming Project &nbsp;</footer>
+<footer>Web Programming Project &nbsp;|&nbsp; Flood Module</footer>
 </body>
 </html>
