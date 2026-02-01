@@ -225,6 +225,198 @@ footer {
 <!-- paste COMMON STYLE here -->
 </head>
 <body>
+<script>
+/* ===== OPENWEATHER API DETAILS ===== */
+const API_KEY = "6145616b7ccd1ab6d81f2964cd90e033";
+const CITY = "Chennai";
+
+// Utility to format time
+function formatTime(date) {
+  return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+let latestDashboardData = {
+  temperature: null,
+  rainfall: null,
+  humidity: null,
+  apiTime: null,         // when weather API data was last fetched
+  alertMsg: "",
+  heatAlert: "Low",
+  heatAlertColor: "#24d6ff",
+  floodRisk: "Low",
+  floodRiskColor: "#24d6ff",
+  overallRisk: "Stable",
+  overallRiskColor: "#5af39b",
+};
+
+function updateDashboardVars(temperature, rainfall, humidity, lastUpdated) {
+  // Compute dashboard variables and store to latestDashboardData for repeated use
+  // Heat Alert Logic
+  let heatAlert = "Low";
+  let heatAlertColor = "#24d6ff";
+  if (temperature > 40) {
+    heatAlert = "High";
+    heatAlertColor = "#ff7e4b";
+  } else if (temperature > 35) {
+    heatAlert = "Moderate";
+    heatAlertColor = "#ffe44e";
+  }
+
+  // Flood Risk Logic
+  let floodRisk = "Low";
+  let floodRiskColor = "#24d6ff";
+  if (rainfall > 50) {
+    floodRisk = "High";
+    floodRiskColor = "#ff7e4b";
+  } else if (rainfall > 20) {
+    floodRisk = "Moderate";
+    floodRiskColor = "#ffe44e";
+  }
+
+  // Overall risk logic
+  let overallRisk = "Stable";
+  let overallRiskColor = "#5af39b";
+  if ((heatAlert === "High" && floodRisk !== "Low") || floodRisk === "High") {
+    overallRisk = "Alert";
+    overallRiskColor = "#ff7e4b";
+  } else if (heatAlert === "Moderate" || floodRisk === "Moderate") {
+    overallRisk = "Caution";
+    overallRiskColor = "#ffe44e";
+  }
+
+  const alertMsg = (heatAlert === "High")
+    ? "Extreme heat - Stay indoors and hydrated"
+    : (floodRisk === "High")
+    ? "Heavy rainfall/Flood possible"
+    : "Be alert & stay safe";
+
+  latestDashboardData = {
+    temperature,
+    rainfall,
+    humidity,
+    apiTime: lastUpdated,
+    alertMsg,
+    heatAlert,
+    heatAlertColor,
+    floodRisk,
+    floodRiskColor,
+    overallRisk,
+    overallRiskColor
+  };
+}
+
+function updateDashboardCards() {
+  // Updates all cards EXCEPT the alerts-status time, which can be kept lively separately
+  const {
+    temperature, rainfall, humidity, heatAlert, heatAlertColor,
+    floodRisk, floodRiskColor, overallRisk, overallRiskColor
+  } = latestDashboardData;
+
+  document.getElementById("flood-status").innerHTML = `Status: <span style="color:${floodRiskColor};">${floodRisk}</span>`;
+  document.getElementById("flood-details").innerHTML = `Rainfall (last hour): <b>${rainfall} mm</b><br/>River conditions: ${rainfall > 20 ? 'Rising' : 'Stable'}`;
+  document.getElementById("flood-trend").innerText = rainfall > 20 ? "⚠️ Upward Trend" : "Steady";
+
+  document.getElementById("heat-status").innerHTML = `Status: <span style="color:${heatAlertColor};">${heatAlert}</span>`;
+  document.getElementById("heat-details").innerHTML = `Peak: ${temperature}&deg;C today<br>Humidity: ${humidity !== undefined ? humidity + "%" : "--"}`;
+  document.getElementById("heat-trend").innerText = heatAlert === "High" ? "💡 Heatwave alert in effect" : (heatAlert === "Moderate" ? "⚠️ Heat precautions suggested" : "Normal");
+
+  document.getElementById("overall-status").innerHTML = `Status: <span style="color:${overallRiskColor};">${overallRisk}</span>`;
+  document.getElementById("overall-details").innerHTML = (overallRisk === "Alert")
+    ? "Combined flood/heat risk, extra caution advised"
+    : (overallRisk === "Caution")
+      ? "Elevated risk - monitor updates" : "No major hazards";
+  document.getElementById("overall-trend").innerText = overallRisk === "Alert" ? "🚨 Stay tuned for updates" : "✅ Stable";
+
+  document.getElementById("alerts-details").innerHTML = `
+    Flood risk: <b>${floodRisk}</b> | Heat: <b>${heatAlert}</b>
+    <br>
+    Temp: <b>${temperature}&deg;C</b>, Rainfall: <b>${rainfall}mm</b>, Humidity: <b>${humidity !== undefined ? humidity + "%" : "--"}</b>
+  `;
+  document.getElementById("alerts-trend").innerText = (overallRisk === "Alert")
+      ? "🚨 Emergency channels open"
+      : (heatAlert === "High" ? "🌡️ Drinking water posts open" : "📡 No special advisories");
+}
+
+function updateAlertsStatusLive() {
+  // This will update ONLY the time portion of the "Recent Alerts" card in real time
+  // Show as "Last Update: [current time] - [latest alert message]"
+
+  const statusElem = document.getElementById("alerts-status");
+  const { alertMsg, apiTime } = latestDashboardData;
+
+  // live clock time (current local time, not data fetch time)
+  const nowTime = formatTime(new Date());
+
+  // Show API update time too if you want: (Optional: uncomment below line)
+  // const apiTimeDisplay = apiTime ? ` (Data as of ${apiTime})` : '';
+
+  // You may display just live time, or both. Let's display both, for clarity.
+  const apiTimeDisplay = apiTime ? ` <span style="font-size:0.94em;opacity:0.7;"></span>` : '';
+
+  statusElem.innerHTML = `Last Update: ${nowTime} &nbsp; - &nbsp;<span style="color:#bb96fe;">${alertMsg}</span>${apiTimeDisplay}`;
+}
+
+// Set up the lively time updating mechanism
+let liveAlertsInterval = null;
+function setupLiveAlertsStatus() {
+  // Update every second
+  if (liveAlertsInterval) clearInterval(liveAlertsInterval);
+  liveAlertsInterval = setInterval(updateAlertsStatusLive, 1000);
+}
+
+// Main function to update dashboard with live API values
+function updateDashboard(temperature, rainfall, humidity, lastUpdated) {
+  updateDashboardVars(temperature, rainfall, humidity, lastUpdated);
+  updateDashboardCards();
+  updateAlertsStatusLive();
+  setupLiveAlertsStatus();
+}
+
+// Fetch real-time weather data and update the dashboard
+fetch(`https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${API_KEY}&units=metric`)
+  .then(response => response.json())
+  .then(data => {
+    const temperature = data.main.temp;
+    const humidity = data.main.humidity;
+    let rainfall = 0;
+    if (data.rain && data.rain["1h"]) {
+      rainfall = data.rain["1h"];
+    }
+    updateDashboard(temperature, rainfall, humidity, formatTime(new Date(data.dt * 1000)));
+  })
+  .catch(error => {
+    // Display static error states
+    document.getElementById("flood-status").innerHTML = 'Status: <span style="color:#ccc;">--</span>';
+    document.getElementById("flood-details").innerHTML = `Unable to fetch data<br/>--`;
+    document.getElementById("flood-trend").innerText = 'No data';
+
+    document.getElementById("heat-status").innerHTML = 'Status: <span style="color:#ccc;">--</span>';
+    document.getElementById("heat-details").innerHTML = `Unable to fetch data<br/>--`;
+    document.getElementById("heat-trend").innerText = 'No data';
+
+    document.getElementById("overall-status").innerHTML = 'Status: <span style="color:#ccc;">--</span>';
+    document.getElementById("overall-details").innerHTML = "Unable to load status";
+    document.getElementById("overall-trend").innerText = 'No data';
+
+    document.getElementById("alerts-status").innerHTML = 'Last Update: -- &nbsp; - &nbsp;<span style="color:#ccc;">Unavailable</span>';
+    document.getElementById("alerts-details").innerHTML = "No live data";
+    document.getElementById("alerts-trend").innerText = "No alerts";
+    if (liveAlertsInterval) clearInterval(liveAlertsInterval);
+    console.error(error);
+  });
+
+// Add click handler for "View Directions"
+document.addEventListener("DOMContentLoaded", function() {
+  var viewDirections = document.getElementById("view-directions-link");
+  if (viewDirections) {
+    viewDirections.addEventListener("click", function(e) {
+      e.preventDefault();
+      // Update the Google Maps link below as appropriate if you want a real location!
+      window.open("https://www.google.com/maps/search/?api=1&query=Riverside+Hall+Chennai", "_blank");
+    });
+  }
+});
+</script>
 
 <nav>
   <h2>🌍 <span style="color:#b1eaff;">ClimateRisk</span></h2>
@@ -245,37 +437,39 @@ footer {
   <div class="cards">
     <div class="card" style="border-top: 4px solid #24d6ff;">
       <h3>🌊 Flood Level</h3>
-      <span class="status">Status: <span style="color:#31e6ff;">Moderate</span></span>
-      <div class="risk-details">River levels rising.<br>Rainfall: 28mm past 24hr</div>
-      <div class="trend">⚠️ Upward Trend</div>
+      <span class="status" id="flood-status">Status: <span style="color:#31e6ff;">--</span></span>
+      <div class="risk-details" id="flood-details">Loading river conditions...</div>
+      <div class="trend" id="flood-trend">Loading...</div>
     </div>
     <div class="card" style="border-top: 4px solid #ff9572;">
       <h3>🔥 Heat Level</h3>
-      <span class="status">Status: <span style="color:#ffad72;">High</span></span>
-      <div class="risk-details">Peak: 36&deg;C today<br>Humidity: 62%</div>
-      <div class="trend">💡 Heatwave alert in effect</div>
+      <span class="status" id="heat-status">Status: <span style="color:#ffad72;">--</span></span>
+      <div class="risk-details" id="heat-details">Loading temperature &amp; humidity...</div>
+      <div class="trend" id="heat-trend">Loading...</div>
     </div>
     <div class="card" style="border-top: 4px solid #5af39b;">
       <h3>🚦 Overall Risk</h3>
-      <span class="status">Status: <span style="color:#5af39b;">Alert</span></span>
-      <div class="risk-details">Combined flood &amp; heat; extra caution advised</div>
-      <div class="trend">🚨 Stay tuned for updates</div>
+      <span class="status" id="overall-status">Status: <span style="color:#5af39b;">--</span></span>
+      <div class="risk-details" id="overall-details">Calculating risk...</div>
+      <div class="trend" id="overall-trend">Loading...</div>
     </div>
     <div class="card" style="border-top: 4px solid #ffe44e;">
       <h3>📍 Latest Shelter Openings</h3>
       <span class="status">Now open: 2 local community centers</span>
       <div class="risk-details">Nearest: Riverside Hall (1.5km) <br> Evacuation: Not required</div>
-      <div class="trend" style="color:#ffe44e;">🗺️ View Directions</div>
+      <div class="trend" style="color:#ffe44e;">
+        🗺️ <a id="view-directions-link" href="#" style="color:#ffe44e;text-decoration:underline;cursor:pointer;">View Directions</a>
+      </div>
     </div>
     <div class="card" style="border-top: 4px solid #bb96fe;">
       <h3>📣 Recent Alerts</h3>
-      <span class="status">Last: 16:05&nbsp; - &nbsp;<span style="color:#bb96fe;">Stay hydrated</span></span>
-      <div class="risk-details">Flood advisory issued at 13:40<br>Heat guidance issued at 16:05</div>
-      <div class="trend" style="color:#bb96fe;">📡 All clear for lightning</div>
+      <span class="status" id="alerts-status">Last Update: -- &nbsp; - &nbsp;<span style="color:#bb96fe;">Loading...</span></span>
+      <div class="risk-details" id="alerts-details">Fetching advisories...</div>
+      <div class="trend" id="alerts-trend" style="color:#bb96fe;">Loading...</div>
     </div>
   </div>
 </div>
 
-<footer>Web Programming Project &nbsp;</span></footer>
+<footer>Web Programming Project &nbsp;</footer>
 </body>
 </html>

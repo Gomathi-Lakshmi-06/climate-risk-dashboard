@@ -167,6 +167,73 @@ footer {
   opacity: 0.92;
 }
 
+.map-modal-overlay {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0,20,33,0.56);
+  justify-content: center;
+  align-items: center;
+}
+
+.map-modal {
+  background: #0e2235;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px #00cfed88;
+  max-width: 93vw;
+  width: 430px;
+  padding: 0 0 18px 0;
+  position: relative;
+  text-align: center;
+  animation: fadein .18s;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: scale(0.91);}
+  to   { opacity: 1; transform: scale(1);}
+}
+.map-modal-close {
+  position: absolute;
+  right: 16px;
+  top: 8px;
+  font-size: 2rem;
+  color: #5af39b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: color 0.17s;
+  z-index: 25;
+}
+.map-modal-close:hover { color: #fc4242; }
+.map-modal-title {
+  font-size: 1.18rem;
+  margin-top:13px;
+  margin-bottom: 6px;
+  color: #24d6ff;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+.map-modal-address {
+  color: #c5fef4;
+  font-size: 1.01rem;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.map-modal-iframe {
+  width: 98%;
+  height: 250px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px #0edbda33;
+  margin-bottom: 7px;
+}
+@media (max-width: 600px) {
+  .map-modal {width: 99vw;}
+  .map-modal-iframe {height: 160px;}
+}
+
 @media (max-width: 960px) {
   .container {
     padding: 23px 8px 18px 8px;
@@ -248,11 +315,17 @@ footer {
     <p>Real-time flood alerts, risk levels, and essential safety resources for your community</p>
   </div>
   <div class="cards">
-    <div class="card" style="border-top: 4px solid #24d6ff;">
+
+    <!-- LIVE FLOOD DATA CARD-->
+    <div class="card" style="border-top: 4px solid #24d6ff;" id="live-flood-card">
       <h3>🌊 Current Flood Risk</h3>
-      <p><span style="color:#31e6ff;font-weight:600;">Moderate</span> – River levels rising; coastal and low-lying areas are most vulnerable.<br>Rainfall: 28mm (last 24hr)</p>
-      <div style="color:#7ad7f7;font-size:0.92rem; margin-top:3px;">Update: 14:50 - Flood watch remains in effect</div>
+      <div id="flood-output">
+        <span style="color: #aaa;">Loading real-time flood data...</span>
+      </div>
+      <div id="flood-update-time" style="color:#7ad7f7;font-size:0.92rem; margin-top:3px;">
+      </div>
     </div>
+
     <div class="card" style="border-top: 4px solid #ffe44e;">
       <h3>⚠️ Advisory & Precaution</h3>
       <p>• Avoid low-lying or flood-prone areas<br>
@@ -261,19 +334,229 @@ footer {
       <div style="color:#ffe44e;font-size:0.96rem;">Evacuation: <span style="font-weight:bold;">Not required</span> at this time</div>
     </div>
     <div class="card" style="border-top: 4px solid #5af39b;">
-      <h3>🪧 Nearest Relief Centers</h3>
-      <p>Riverside Hall (1.5km) - <span style="color:#5af39b;">Open</span><br>Community Gym (2.2km) - <span style="color:#5af39b;">Standby</span></p>
-      <div style="color:#5af39b;font-size:0.93rem;">🗺️ <a href="#" style="color:#5af39b;text-decoration: underline;">View directions</a></div>
+      <h3>🏠 Nearest Relief Centers</h3>
+      <p>
+        🏥 Riverside Hall (1.5km) - <span style="color:#5af39b;">Open</span><br>
+        🏢 Community Gym (2.2km) - <span style="color:#5af39b;">Standby</span>
+      </p>
+      <div style="color:#5af39b;font-size:0.93rem;">
+        🗺️ 
+        <a
+          href="#"
+          id="view-directions-link"
+          style="color:#5af39b;text-decoration: underline;"
+        >View directions</a>
+      </div>
     </div>
     <div class="card" style="border-top: 4px solid #bb96fe;">
       <h3>📣 Recent Flood Alerts</h3>
-      <p><span style="color:#bb96fe;font-weight:600;">13:40:</span> Flood advisory issued for downtown<br>
-         <span style="color:#bb96fe;font-weight:600;">14:50:</span> Flood watch continues;  stay updated</p>
-      <div style="color:#bb96fe;font-size:0.95rem;">📡 Lightning risk: <span style="color:#bbb;">Low</span></div>
+      <div id="recent-flood-alerts">
+        <span style="color:#aaa;">Loading latest flood alerts...</span>
+      </div>
+      <div style="color:#bb96fe;font-size:0.95rem;" id="lightning-alert">📡 Lightning risk: <span style="color:#bbb;">Low</span></div>
     </div>
   </div>
 </div>
 
-<footer>Web Programming Project &nbsp;|&nbsp; Flood Module</footer>
+<!-- Map Modal for Directions -->
+<div class="map-modal-overlay" id="map-modal-overlay" tabindex="-1" aria-modal="true" role="dialog">
+  <div class="map-modal">
+    <button class="map-modal-close" id="close-map-modal" title="Close map" aria-label="Close">&times;</button>
+    <div class="map-modal-title" id="map-modal-title"></div>
+    <div class="map-modal-address" id="map-modal-address"></div>
+    <iframe
+      id="map-modal-iframe"
+      class="map-modal-iframe"
+      src=""
+      allowfullscreen
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      title="Directions map"
+    ></iframe>
+  </div>
+</div>
+
+<footer>Web Programming Project &nbsp;</footer>
+
+<script>
+/**
+ * This script fetches live rainfall data and updates the flood dashboard card.
+ * It also updates the recent flood alerts card based on the live data.
+ * Make sure to place your API KEY accordingly (done for you!).
+ */
+const apiKey = "6145616b7ccd1ab6d81f2964cd90e033";
+const city = "Chennai";
+
+/**
+ * Formats the current time to HH:MM format (24hr).
+ */
+function getCurrentTimeString() {
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// Create a function to generate alert messages based on rainfall/risk
+function getFloodAlertHtml(rainfall, risk, updateTime) {
+  if (risk === "High") {
+    return `
+      <p>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        <span style="color:#fc4242;font-weight:600;"> Severe Flood Risk!</span> Evacuate low-lying areas, avoid all travel.<br>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        Continuous heavy rainfall detected. Emergency services on alert.
+      </p>`;
+  } else if (risk === "Moderate") {
+    return `
+      <p>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        <span style="color:#ffd342;font-weight:600;"> Flood Watch in effect.</span> Moderate rainfall: Stay alert for flash floods.<br>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        Pooling/ponding possible in low-lying zones.
+      </p>`;
+  } else if (rainfall > 0) {
+    return `
+      <p>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        <span style="color:#31e6ff;font-weight:600;"> Low flood risk.</span> Light rainfall observed.<br>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        No flooding anticipated. Stay aware of further updates.
+      </p>`;
+  } else {
+    return `
+      <p>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        <span style="color:#31e6ff;font-weight:600;"> No flood alerts.</span> No rainfall detected.<br>
+        <span style="color:#bb96fe;font-weight:600;">${updateTime}:</span>
+        Safe conditions. Monitor for any changes.
+      </p>`;
+  }
+}
+
+// Optionally, update the lightning alert depending on weather conditions
+function updateLightningAlert(data) {
+  let lightningHtml = '📡 Lightning risk: <span style="color:#bbb;">Low</span>';
+  // If thunderstorm in weather conditions, set alert high
+  if (
+    data.weather &&
+    Array.isArray(data.weather) &&
+    data.weather.some(w => w.main && w.main.toLowerCase().includes('thunderstorm'))
+  ) {
+    lightningHtml = '📡 Lightning risk: <span style="color:#fc4242;font-weight:600;">High</span> <span style="color:#bb96fe;">(Thunderstorm detected)</span>';
+  }
+  document.getElementById('lightning-alert').innerHTML = lightningHtml;
+}
+
+function updateFloodData() {
+  fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`)
+    .then(res => res.json())
+    .then(data => {
+      let rainfall = 0;
+      if (data.rain && data.rain["1h"]) {
+        rainfall = data.rain["1h"];
+      }
+
+      let risk = "Low";
+      let riskColor = "#31e6ff";
+      if (rainfall > 50) {
+        risk = "High";
+        riskColor = "#fc4242";
+      } else if (rainfall > 20) {
+        risk = "Moderate";
+        riskColor = "#ffd342";
+      }
+
+      // Update time
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const timeShort = getCurrentTimeString();
+
+      document.getElementById("flood-output").innerHTML = `
+        🌧️ Rainfall (last 1 hour): <b>${rainfall} mm</b><br>
+        🚨 Flood Risk Level: <b style="color:${riskColor};">${risk}</b>
+      `;
+      document.getElementById("flood-update-time").innerHTML = `Update: ${timeStr} - Live data from OpenWeatherMap`;
+
+      // Update recent flood alerts dynamically
+      document.getElementById("recent-flood-alerts").innerHTML = getFloodAlertHtml(rainfall, risk, timeShort);
+
+      // Update lightning alert
+      updateLightningAlert(data);
+    })
+    .catch(err => {
+      document.getElementById("flood-output").innerHTML =
+        "<span style='color:#fc4242;'>Unable to fetch flood data (check internet or API key limit reached).</span>";
+      document.getElementById("flood-update-time").innerText = "";
+      document.getElementById("recent-flood-alerts").innerHTML =
+        "<span style='color:#fc4242;'>Unable to load latest alerts (offline or API limit reached).</span>";
+      document.getElementById("lightning-alert").innerHTML =
+        '📡 Lightning risk: <span style="color:#bbb;">Unknown</span>';
+      console.error(err);
+    });
+}
+
+// Map/Relief Centers Info
+const reliefCenters = [
+  {
+    name: "Riverside Hall",
+    address: "123 Riverside Rd, Chennai",
+    place: "Riverside Hall, Chennai",
+    googleMapsEmbed: "https://www.google.com/maps?q=Riverside+Hall,+Chennai&output=embed"
+  },
+  {
+    name: "Community Gym",
+    address: "45 Gym Ave, Chennai",
+    place: "Community Gym, Chennai",
+    googleMapsEmbed: "https://www.google.com/maps?q=Community+Gym,+Chennai&output=embed"
+  }
+];
+
+// Handle 'View directions' click to show map in modal
+document.addEventListener("DOMContentLoaded", function () {
+  // Initial fetch when page loads
+  updateFloodData();
+  // Optionally, update the data every 5 minutes for live effect
+  setInterval(updateFloodData, 5 * 60 * 1000); // 5 minutes (300000 ms)
+
+  document.getElementById("view-directions-link").addEventListener("click", function (e) {
+    e.preventDefault();
+    // Show a simple selection popup if multiple centers, else show first
+    showMapModal(reliefCenters[0]);
+  });
+
+  // Modal elements
+  const overlay = document.getElementById("map-modal-overlay");
+  const closeBtn = document.getElementById("close-map-modal");
+
+  // Trap focus on modal when open (optionally for accessibility)
+  closeBtn.addEventListener("click", closeMapModal);
+  overlay.addEventListener("click", function(e){
+    if (e.target === overlay) closeMapModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (overlay.style.display === "flex" && (e.key === "Escape" || e.keyCode === 27)) {
+      closeMapModal();
+    }
+  });
+});
+
+// Open the map modal for a location
+function showMapModal(location) {
+  var overlay = document.getElementById("map-modal-overlay");
+  document.getElementById("map-modal-title").textContent = `Directions to ${location.name}`;
+  document.getElementById("map-modal-address").textContent = location.address;
+  document.getElementById("map-modal-iframe").src = location.googleMapsEmbed;
+  overlay.style.display = "flex";
+  // Set focus to close button for accessibility
+  document.getElementById("close-map-modal").focus();
+}
+
+// Close map modal
+function closeMapModal() {
+  var overlay = document.getElementById("map-modal-overlay");
+  overlay.style.display = "none";
+  document.getElementById("map-modal-iframe").src = "";
+}
+</script>
+
 </body>
 </html>
