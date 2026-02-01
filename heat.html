@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Heat Risk Interpretation</title>
+  <style>
+    /* ... previous CSS ... */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background 0.18s, color 0.18s;
+    }
+    body {
+      background: linear-gradient(120deg, #1d2838 0%, #0056a3 100%);
+      color: #f4f7fa;
+      min-height: 100vh;
+      padding-bottom: 0;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 8vw;
+      background: rgba(26, 39, 62, 0.94);
+      backdrop-filter: blur(8px);
+      border-radius: 0px 0px 18px 18px;
+      box-shadow: 0 3px 16px rgba(0,0,0,0.10);
+      margin-bottom: 0.5em;
+      min-height: 60px;
+    }
+    nav h2, .navbar-logo {
+      color: #31e6ff;
+      letter-spacing: 2px;
+      font-size: 1.45rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      line-height: 1;
+      user-select: none;
+      background: none;
+      text-decoration: none;
+    }
+    nav a {
+      color: #e9fdff;
+      text-decoration: none;
+      margin: 0;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 1.01rem;
+      transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+      border: 1px solid transparent;
+      background: none;
+      display: inline-block;
+    }
+    nav a:hover, nav a.active {
+      color: #0b2547;
+      background: linear-gradient(90deg, #4ef3ff 25%, #00eafd 100%);
+      box-shadow: 0 2px 10px #4ef3ff38;
+      border-color: #63ffff77;
+    }
+    .container, .page-content {
+      padding: 36px 3vw 28px 3vw;
+      max-width: 1050px;
+      margin: 0 auto 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      background: rgba(17,31,62,0.10);
+      border-radius: 18px;
+      margin-top: 24px;
+      box-shadow: 0 2px 22px 0 #00a6d633;
+    }
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 10px 0 0 0;
+    }
+    .dashboard-title {
+      font-size: 2.2rem;
+      background: linear-gradient(90deg, #53fff6 30%, #3e77ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 900;
+      letter-spacing: 0.4px;
+      margin-bottom: 7px;
+      line-height: 1.16;
+      background-clip: text;
+    }
+    .dashboard-subtitle {
+      color: #b3daf7;
+      font-size: 1.06rem;
+      line-height: 1.46;
+      margin-inline: 10px;
+      padding: 0 0 2px 0;
+    }
+    .dashboard-cards,
+    .dashboard-cards-responsive {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px 22px;
+      justify-items: center;
+      margin-top: 6px;
+    }
+    .dashboard-card {
+      background: rgba(255,255,255,0.10);
+      width: 100%;
+      min-width: 0;
+      padding: 20px 16px 18px 16px;
+      border-radius: 20px;
+      text-align: left;
+      box-shadow: 0 2px 14px rgba(0,40,90,.14), 0 1px 2px #16e3ff18;
+      transition: transform 0.18s, box-shadow 0.18s, border 0.15s;
+      cursor: pointer;
+      border: 1.2px solid rgba(78,243,255,0.06);
+      backdrop-filter: blur(2px);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7em;
+    }
+    .dashboard-card-title {
+      margin-bottom: 2px;
+      font-size: 1.15rem;
+      color: #24d6ff;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .icon {
+      width: 1em;
+      height: 1em;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 2.5px;
+      background: none;
+    }
+    .icon-alert::before {
+      content: "⚠️";
+      font-size: 1.12em;
+      vertical-align: middle;
+      margin-right: 0.1em;
+    }
+    .icon-idea::before {
+      content: "💡";
+      font-size: 1.08em;
+      vertical-align: middle;
+      margin-right: 0.09em;
+    }
+    .dashboard-data-title {
+      color: #e2f8fd;
+      font-size: 1.09rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .dashboard-data-desc {
+      color: #c2e8f7;
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+    /* Add thermometer bar CSS */
+    .heat-index-bar-container {
+      margin-top: 22px;
+      margin-bottom: 3px;
+      width: 100%;
+      max-width: 390px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 12px 0 2px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 1rem;
+    }
+    .heat-index-bar-label {
+      color: #9febfe;
+      margin-bottom: 7px;
+    }
+    .heat-index-bar {
+      width: 100%;
+      background: linear-gradient(90deg, #18e7d7 10%, #ffeb34 40%, #f76226 80%, #d41818 100%);
+      border-radius: 13px;
+      height: 21px;
+      position: relative;
+      margin-bottom: 7px;
+      box-shadow: 0 2px 10px #0169bb33;
+      border: 1.3px solid #56b8f5bb;
+    }
+    .heat-index-bar-fill {
+      border-radius: 13px;
+      height: 100%;
+      position: absolute;
+      left: 0; top: 0;
+      background: linear-gradient(90deg, #44fff2 30%, #ffeb94 60%, #ff6521 100%);
+      box-shadow: 0 1.5px 12px #f7b45077;
+      transition: width 0.5s cubic-bezier(.42,2,.55,1.22);
+      z-index: 1;
+    }
+    .heat-index-bar-indicator {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 26px;
+      height: 26px;
+      background: #f6b400;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 12px #fbcf55c2;
+      left: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.12rem;
+      color: #b53c00;
+      transition: left 0.5s cubic-bezier(.42,2,.55,1.22);
+      pointer-events: none;
+    }
+    .heat-index-bar-value-label {
+      color: #edfff6;
+      margin-bottom: 0;
+      font-size: 1.09rem;
+      font-weight: 500;
+      letter-spacing: 0.05rem;
+    }
+    /* Make Heat Index card more compact and left-aligned */
+    .dashboard-card.heat-index-card .dashboard-data-title {
+      font-size: 1.55rem;
+      font-weight: 700;
+      margin-bottom: 0;
+      color: #fcf4ad;
+      letter-spacing: 0.5px;
+    }
+    .dashboard-card.heat-index-card {
+      min-height: 48px;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      gap: 0.2em;
+      align-items: flex-start;
+      justify-content: flex-start;
+      text-align: left;
+    }
+    /* Add more vertical padding for extra info */
+    .dashboard-card.heat-index-card .heat-index-extra {
+      color: #a1e4ff;
+      font-size: 0.98rem;
+      margin-top: 4px;
+      line-height: 1.4;
+      /* Reduce space between title and extra text */
+    }
+    footer {
+  text-align: center;
+  padding: 12px 5px 11px 5px;
+  background: rgba(20, 30, 48, 0.92);
+  margin-top: 36px;
+  color: #90c9fa;
+  font-size: 0.97rem;
+  border-radius: 12px 12px 0px 0px;
+  backdrop-filter: blur(1.5px);
+  box-shadow: 0 -1.5px 10px #004e9255;
+  opacity: 0.92;
+}
+    @media (max-width: 960px) {
+      .container, .page-content {
+        padding: 23px 8px 18px 8px;
+        margin-top: 16px;
+      }
+      .dashboard-title {
+        font-size: 1.31rem;
+      }
+      .dashboard-subtitle {
+        font-size: 0.92rem;
+      }
+      .dashboard-card.heat-index-card .dashboard-data-title {
+        font-size: 1.2rem;
+      }
+      .dashboard-card.heat-index-card {
+        min-height: 34px;
+        padding-top: 7px;
+        padding-bottom: 7px;
+      }
+      footer {
+        max-width: 98vw;
+        font-size: 0.97rem;
+        padding: 10px 8px 8px 8px;
+        border-radius: 12px 12px 0px 0px;
+        margin: 20px auto 12px auto;
+      }
+    }
+    @media (max-width: 720px) {
+      nav {flex-direction: column; gap: 11px; padding: 11px 4vw;}
+      .container, .page-content {padding: 10px 3vw 15px 3vw;}
+      .dashboard-cards, .dashboard-cards-responsive {gap: 15px;}
+      footer {
+        max-width: 99vw;
+        padding: 10px 4vw 8px 4vw;
+        border-radius: 11px 11px 0px 0px;
+        font-size: 0.95rem;
+      }
+    }
+    @media (max-width: 600px) {
+      nav {
+        flex-direction: column; 
+        gap: 8px; 
+        padding: 6px 2vw;
+        min-height: 44px;
+      }
+      nav h2, .navbar-logo {
+        font-size: 1rem;
+      }
+      .dashboard-title {
+        font-size: 1.15rem;
+        margin-bottom: 4px;
+      }
+      .dashboard-subtitle {
+        font-size: 0.83rem;
+      }
+      .container, .page-content {
+        margin-top: 10px;
+        padding: 4px 2vw 8px 2vw;
+        border-radius: 8px;
+      }
+      .dashboard-cards, .dashboard-cards-responsive {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 0;
+      }
+      .dashboard-card {
+        padding: 10px 8px 12px 8px;
+        border-radius: 11px;
+      }
+      .heat-index-bar-container {
+        max-width: 98vw;
+      }
+      .dashboard-card.heat-index-card .dashboard-data-title {
+        font-size: 1.07rem;
+      }
+      .dashboard-card.heat-index-card {
+        min-height: 24px;
+        padding-top: 2px;
+        padding-bottom: 2px;
+      }
+      .dashboard-card.heat-index-card .heat-index-extra {
+        font-size: 0.89rem;
+      }
+      footer {
+    font-size: 0.91rem;
+    border-radius: 8px 8px 0px 0px;
+    margin-top: 16px;
+  }
+    }
+  </style>
+  <script>
+    /*
+      HEAT INTERPRETATION (WORKS FULLY CLIENT SIDE -- DEMO)
+      Shows output using OpenWeather, but if key not present, uses hardcoded demo values.
+      API not working? Never fear: you'll see DEMO output!
+    */
+
+    const OPEN_WEATHER_API_KEY = "6145616b7ccd1ab6d81f2964cd90e033";
+    const CITY = "London,uk";
+    const WEATHER_API_URL = `https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${OPEN_WEATHER_API_KEY}&units=metric`;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      fetchAndInterpretHeatRisk();
+    });
+
+    function fetchAndInterpretHeatRisk() {
+      if (!OPEN_WEATHER_API_KEY) {
+        showDemoHeatRisk();
+        return;
+      }
+      fetch(WEATHER_API_URL)
+        .then(resp => resp.ok ? resp.json() : Promise.reject())
+        .then(data => {
+          let tempC = data.main && typeof data.main.temp === "number" ? data.main.temp : null;
+          let humidity = data.main && typeof data.main.humidity === "number" ? data.main.humidity : null;
+          let heatIndex = calcHeatIndex(tempC, humidity);
+          let heatLevel = interpretHeatLevel(heatIndex);
+          let healthAdvisory = getHealthAdvisory(heatLevel);
+          document.getElementById('heat-level').textContent = heatLevel;
+          document.getElementById('heat-index').textContent = isNaN(heatIndex) ? "N/A" : heatIndex.toFixed(1);
+          document.getElementById('heat-details').textContent = 
+            `Temperature: ${tempC !== null ? tempC.toFixed(1) : "?"}°C | Humidity: ${humidity !== null ? humidity : "?"}%`;
+          document.getElementById('health-advisory').textContent = healthAdvisory;
+          document.getElementById('heat-index-extra').textContent =
+            "Heat Index represents how hot it feels when humidity is factored in with the actual air temperature. High heat index can be dangerous for health.";
+          updateTemperatureBar(tempC);
+        })
+        .catch(_ => {
+          showDemoHeatRisk();
+        });
+    }
+
+    function showDemoHeatRisk() {
+      let tempC = 36.3;
+      let humidity = 62;
+      let heatIndex = calcHeatIndex(tempC, humidity);
+      let heatLevel = interpretHeatLevel(heatIndex);
+      let healthAdvisory = getHealthAdvisory(heatLevel);
+      document.getElementById('heat-level').textContent = heatLevel;
+      document.getElementById('heat-index').textContent = heatIndex.toFixed(1);
+      document.getElementById('heat-details').textContent =
+        `Temperature: ${tempC.toFixed(1)}°C | Humidity: ${humidity}%`;
+      document.getElementById('health-advisory').textContent = healthAdvisory;
+      document.getElementById('heat-index-extra').textContent =
+          "Heat Index measures perceived temperature, combining actual air temperature with humidity. Elevated values can cause heat illnesses; stay aware.";
+      updateTemperatureBar(tempC);
+    }
+
+    // Calculate the heat index in Celsius
+    function calcHeatIndex(t, rh) {
+      if (typeof t !== "number" || typeof rh !== "number") return NaN;
+      let T = t * 9 / 5 + 32;
+      let HI =
+        -42.379 +
+        2.04901523 * T +
+        10.14333127 * rh -
+        0.22475541 * T * rh -
+        0.00683783 * T * T -
+        0.05481717 * rh * rh +
+        0.00122874 * T * T * rh +
+        0.00085282 * T * rh * rh -
+        0.00000199 * T * T * rh * rh;
+      return (HI - 32) * 5 / 9;
+    }
+
+    function interpretHeatLevel(heatIndexC) {
+      if (isNaN(heatIndexC)) return "Unknown";
+      if (heatIndexC < 27) return "Low";
+      if (heatIndexC < 32) return "Moderate";
+      if (heatIndexC < 41) return "High";
+      return "Extreme";
+    }
+
+    function getHealthAdvisory(level) {
+      switch (level) {
+        case "Low":
+          return "Stay hydrated and wear light clothing if outdoors.";
+        case "Moderate":
+          return "Limit strenuous outdoor activity. Drink plenty of water.";
+        case "High":
+          return "Avoid direct sun. Take frequent breaks and stay in shade.";
+        case "Extreme":
+          return "Dangerous heat risk! Remain indoors, avoid heat exposure, and check on vulnerable people.";
+        default:
+          return "Be cautious; heat information unavailable.";
+      }
+    }
+
+    function updateTemperatureBar(tempC) {
+      const bar = document.getElementById('heat-index-bar-fill');
+      const indicator = document.getElementById('heat-index-bar-indicator');
+      const valueLabel = document.getElementById('heat-index-bar-value-label');
+      let displayTemp = "N/A";
+      let min = 15;
+      let max = 48;
+      let percent = 0.15;
+      if (typeof tempC === "number") {
+        displayTemp = tempC.toFixed(1) + "°C";
+        percent = Math.max(0, Math.min(1, (tempC - min) / (max - min)));
+      } else {
+        percent = 0.15;
+      }
+      bar.style.width = (percent * 100) + '%';
+      indicator.style.left = `calc(${percent * 100}% - 13px)`;
+      valueLabel.textContent = "Current Temp: " + displayTemp;
+    }
+  </script>
+</head>
+<body>
+  <nav>
+    <h2>🌍 ClimateRisk</h2>
+    <div>
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="flood.html">Flood</a>
+      <a href="heat.html">Heat</a>
+      <a href="response.html">Response</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">Heat Wave Alerts</h1>
+      <div class="dashboard-subtitle">Heat warnings and health precautions</div>
+      <!-- Extra feature: Heat index bar -->
+      <div class="heat-index-bar-container">
+        <div class="heat-index-bar-label">🌡️ Live Temperature</div>
+        <div class="heat-index-bar" style="position: relative;">
+          <div id="heat-index-bar-fill" class="heat-index-bar-fill" style="width:15%"></div>
+          <div id="heat-index-bar-indicator" class="heat-index-bar-indicator">🌞</div>
+        </div>
+        <div id="heat-index-bar-value-label" class="heat-index-bar-value-label">Current Temp: Loading…</div>
+      </div>
+    </div>
+    <div class="dashboard-cards dashboard-cards-responsive">
+      <div class="dashboard-card card-warn">
+        <div class="dashboard-card-title">
+          <span class="icon icon-alert"></span> Heat Level
+        </div>
+        <div class="dashboard-card-content">
+          <div id="heat-level" class="dashboard-data-title">Loading…</div>
+          <div id="heat-details" class="dashboard-data-desc">Loading…</div>
+        </div>
+      </div>
+      <div class="dashboard-card card-warn heat-index-card">
+        <div class="dashboard-card-title" style="margin-bottom:0; align-items: flex-start;">
+          <span class="icon icon-alert"></span> Heat Index
+        </div>
+        <div class="dashboard-card-content" style="display:block;min-height:unset;">
+          <div id="heat-index" class="dashboard-data-title" style="margin-bottom:0;">Loading…</div>
+          <div id="heat-index-extra" class="heat-index-extra" style="margin-top:6px;">
+            <!-- Populated by JS: explanation about Heat Index -->
+            The heat index (also known as the "feels like" temperature) shows how hot it actually feels when relative humidity is factored in with the actual air temperature.
+          </div>
+        </div>
+      </div>
+      <div class="dashboard-card card-tip">
+        <div class="dashboard-card-title">
+          <span class="icon icon-idea"></span> Health Advisory
+        </div>
+        <div class="dashboard-card-content">
+          <div id="health-advisory" class="dashboard-data-title">Loading…</div>
+          <div class="dashboard-data-desc" style="font-size:0.93rem;color:#aad7f3;">
+            This heat advisory is for demonstration only and does not represent professional health or emergency guidance.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>
+    Web Programming Project &nbsp;
+  </footer>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Disaster Response</title>
+  <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.18s, color 0.18s;
+}
+
+body {
+  background: linear-gradient(120deg, #1d2838 0%, #0056a3 100%);
+  color: #f4f7fa;
+  min-height: 100vh;
+  padding-bottom: 0;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 8vw;
+  background: rgba(26, 39, 62, 0.94);
+  backdrop-filter: blur(8px);
+  border-radius: 0px 0px 18px 18px;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.10);
+  margin-bottom: 0.5em;
+  min-height: 60px;
+}
+
+nav h2 {
+  color: #31e6ff;
+  letter-spacing: 2px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1;
+  user-select: none;
+}
+
+nav div {
+  display: flex;
+  gap: 8px;
+}
+
+nav a {
+  color: #e9fdff;
+  text-decoration: none;
+  margin: 0;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 1.01rem;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+  border: 1px solid transparent;
+}
+
+nav a:hover, nav a.active {
+  color: #0b2547;
+  background: linear-gradient(90deg, #4ef3ff 25%, #00eafd 100%);
+  box-shadow: 0 2px 10px #4ef3ff38;
+  border-color: #63ffff77;
+}
+
+.container {
+  padding: 36px 3vw 28px 3vw;
+  max-width: 1050px;
+  margin: 0 auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: rgba(17,31,62,0.10);
+  border-radius: 18px;
+  margin-top: 24px;
+  box-shadow: 0 2px 22px 0 #00a6d633;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px 0 0 0;
+}
+
+.title h1 {
+  font-size: 2.2rem;
+  background: linear-gradient(90deg, #53fff6 30%, #3e77ff 100%);
+  background-clip: text;   
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  margin-bottom: 7px;
+  line-height: 1.16;
+}
+
+.title p {
+  color: #b3daf7;
+  font-size: 1.06rem;
+  line-height: 1.46;
+  margin-inline: 10px;
+  padding: 0 0 2px 0;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px 22px;
+  justify-items: center;
+  margin-top: 6px;
+}
+
+.card {
+  background: rgba(255,255,255,0.10);
+  width: 100%;
+  min-width: 0;
+  padding: 20px 16px 18px 16px;
+  border-radius: 20px;
+  text-align: left;
+  box-shadow: 0 2px 14px rgba(0,40,90,.14), 0 1px 2px #16e3ff18;
+  transition: transform 0.18s, box-shadow 0.18s, border 0.15s;
+  cursor: pointer;
+  border: 1.2px solid rgba(78,243,255,0.06);
+  backdrop-filter: blur(2px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7em;
+}
+
+.card:hover {
+  transform: translateY(-3px) scale(1.025) rotate(-0.5deg);
+  box-shadow: 0 6px 32px rgba(0,40,90,0.16), 0 6px 16px #00eaff38;
+  border-color: #37e6fd;
+  background: rgba(250,255,255,0.14);
+}
+
+.card h3 {
+  margin-bottom: 2px;
+  font-size: 1.15rem;
+  color: #24d6ff;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.card p {
+  color: #e2f8fd;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+footer {
+  text-align: center;
+  padding: 12px 5px 11px 5px;
+  background: rgba(20, 30, 48, 0.92);
+  margin-top: 36px;
+  color: #90c9fa;
+  font-size: 0.97rem;
+  border-radius: 12px 12px 0px 0px;
+  backdrop-filter: blur(1.5px);
+  box-shadow: 0 -1.5px 10px #004e9255;
+  opacity: 0.92;
+}
+
+@media (max-width: 960px) {
+  .container {
+    padding: 23px 8px 18px 8px;
+    margin-top: 16px;
+  }
+  .title h1 {
+    font-size: 1.31rem;
+  }
+  .title p {
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 720px) {
+  nav {flex-direction: column; gap: 11px; padding: 11px 4vw;}
+  .container {padding: 10px 3vw 15px 3vw;}
+  .cards {gap: 15px;}
+}
+
+@media (max-width: 600px) {
+  nav {
+    flex-direction: column; 
+    gap: 8px; 
+    padding: 6px 2vw;
+    min-height: 44px;
+  }
+  nav h2 {
+    font-size: 1rem;
+  }
+  .title h1 {
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+  }
+  .title p {
+    font-size: 0.83rem;
+  }
+  .container {
+    margin-top: 10px;
+    padding: 4px 2vw 8px 2vw;
+    border-radius: 8px;
+  }
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 0;
+  }
+  .card {
+    padding: 10px 8px 12px 8px;
+    border-radius: 11px;
+  }
+  footer {
+    font-size: 0.91rem;
+    border-radius: 8px 8px 0px 0px;
+    margin-top: 16px;
+  }
+}
+  </style>
+</head>
+<body>
+
+<nav>
+  <h2>🌍 ClimateRisk</h2>
+  <div>
+    <a href="index.html">Home</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="flood.html">Flood</a>
+    <a href="heat.html">Heat</a>
+    <a href="response.html">Response</a>
+  </div>
+</nav>
+
+
+<div class="container">
+  <div class="title">
+    <h1>Disaster Response &amp; Safety</h1>
+    <p>Emergency planning and guidelines</p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Emergency Steps</h3>
+      <p>Follow evacuation instructions given by authorities promptly. Stay calm and assist others if possible.</p>
+    </div>
+    <div class="card">
+      <h3>Helpline</h3>
+      <p>National Disaster Helpline: <strong>112</strong></p>
+    </div>
+    <div class="card">
+      <h3>First Aid</h3>
+      <p>Check for injuries, provide basic first aid, and seek professional medical help if needed.</p>
+    </div>
+    <div class="card">
+      <h3>Stay Informed</h3>
+      <p>Listen to emergency broadcasts or alerts for real-time updates and instructions.</p>
+    </div>
+  </div>
+</div>
+
+<footer>Web Programming Project &nbsp;</footer>
+
+
+</body>
+</html>
