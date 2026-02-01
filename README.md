@@ -16,7 +16,7 @@ A web-based dashboard that displays climate-related risks such as flood risk and
 
 ## Team
 - Gomathi Lakshmi
-- Team Member 2
+- Navya
 
 ## Git Workflow
 Each team member develops the project locally and pushes the final code to this common GitHub repository.
