@@ -9,7 +9,10 @@ const HOST = process.env.HOST || "127.0.0.1";
 const ROOT = __dirname;
 const CACHE_MS = siteConfig.refreshMinutes * 60 * 1000;
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || "";
+<<<<<<< HEAD
 const INDIA_ISO3 = "IND";
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -26,6 +29,10 @@ const contentTypes = {
 const liveCache = {
   entries: new Map()
 };
+<<<<<<< HEAD
+=======
+const locationCache = new Map();
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
@@ -82,6 +89,7 @@ function normalizePlace(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
+<<<<<<< HEAD
 function cacheKeyFor(place, latitude, longitude, options = {}) {
   const flags = [
     `relief:${options.includeRelief ? 1 : 0}`,
@@ -102,6 +110,20 @@ async function safeFetch(promise, fallbackValue) {
   } catch {
     return fallbackValue;
   }
+=======
+function cacheKeyFor(place, latitude, longitude, includeRelief) {
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return `coords:${latitude.toFixed(4)},${longitude.toFixed(4)}|relief:${includeRelief ? 1 : 0}`;
+  }
+  return `place:${normalizePlace(place).toLowerCase()}|relief:${includeRelief ? 1 : 0}`;
+}
+
+function cacheKeyForLocation(place, latitude, longitude) {
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return `coords:${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+  }
+  return `place:${normalizePlace(place).toLowerCase()}`;
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 }
 
 async function fetchJson(url, options = {}) {
@@ -134,6 +156,7 @@ async function fetchJson(url, options = {}) {
   }
 }
 
+<<<<<<< HEAD
 async function fetchText(url, options = {}) {
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs || 8000;
@@ -164,6 +187,8 @@ async function fetchText(url, options = {}) {
   }
 }
 
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function formatLocationLabel(location) {
   return [location.name, location.admin1, location.country].filter(Boolean).join(", ");
 }
@@ -182,14 +207,22 @@ async function findLocationMatches(query) {
   }
 
   const geocodeUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
+<<<<<<< HEAD
   geocodeUrl.searchParams.set("name", normalized.split(",")[0].trim());
+=======
+  geocodeUrl.searchParams.set("name", normalized);
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   geocodeUrl.searchParams.set("count", "6");
   geocodeUrl.searchParams.set("language", "en");
   geocodeUrl.searchParams.set("format", "json");
   geocodeUrl.searchParams.set("countryCode", "IN");
 
   try {
+<<<<<<< HEAD
     const geocode = await fetchJson(geocodeUrl, { timeoutMs: 2200 });
+=======
+    const geocode = await fetchJson(geocodeUrl, { timeoutMs: 1500 });
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     const results = (Array.isArray(geocode.results) ? geocode.results : []).filter(
       (item) => String(item.country_code || item.country || "").toLowerCase() === "in" || String(item.country || "").toLowerCase() === "india"
     );
@@ -207,6 +240,7 @@ async function findLocationMatches(query) {
   nominatimUrl.searchParams.set("addressdetails", "1");
   nominatimUrl.searchParams.set("countrycodes", "in");
 
+<<<<<<< HEAD
   try {
     const results = await fetchJson(nominatimUrl, { timeoutMs: 2200 });
     return (Array.isArray(results) ? results : []).map((item) => ({
@@ -227,6 +261,23 @@ async function findLocationMatches(query) {
     console.warn("Nominatim place search fallback failed:", error.message);
     return [];
   }
+=======
+  const results = await fetchJson(nominatimUrl, { timeoutMs: 1200 });
+  return (Array.isArray(results) ? results : []).map((item) => ({
+    name:
+      item.address?.suburb ||
+      item.address?.neighbourhood ||
+      item.address?.city_district ||
+      item.address?.town ||
+      item.address?.city ||
+      item.display_name?.split(",")[0] ||
+      normalized,
+    admin1: item.address?.state || item.address?.county || "",
+    country: item.address?.country || "",
+    latitude: Number(item.lat),
+    longitude: Number(item.lon)
+  }));
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 }
 
 async function reverseGeocode(latitude, longitude) {
@@ -235,7 +286,11 @@ async function reverseGeocode(latitude, longitude) {
   reverseUrl.searchParams.set("lon", String(longitude));
   reverseUrl.searchParams.set("format", "jsonv2");
   reverseUrl.searchParams.set("zoom", "14");
+<<<<<<< HEAD
   return fetchJson(reverseUrl, { timeoutMs: 2200 });
+=======
+  return fetchJson(reverseUrl, { timeoutMs: 1200 });
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 }
 
 function fallbackLocation(place) {
@@ -262,12 +317,24 @@ function fallbackLocation(place) {
 
 async function resolveLocation(place, latitude, longitude) {
   const normalizedPlace = normalizeSearchQuery(place);
+<<<<<<< HEAD
+=======
+  const cacheKey = cacheKeyForLocation(normalizedPlace || siteConfig.city, latitude, longitude);
+  const cachedLocation = locationCache.get(cacheKey);
+  if (cachedLocation) {
+    return cachedLocation;
+  }
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
   if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
     try {
       const reverse = await reverseGeocode(latitude, longitude);
       const address = reverse.address || {};
+<<<<<<< HEAD
       return {
+=======
+      const resolved = {
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
         name:
           address.suburb ||
           address.neighbourhood ||
@@ -280,14 +347,30 @@ async function resolveLocation(place, latitude, longitude) {
         latitude,
         longitude
       };
+<<<<<<< HEAD
     } catch (error) {
       console.warn("Reverse geocoding fallback:", error.message);
       return fallbackLocation(normalizedPlace || siteConfig.city);
+=======
+      locationCache.set(cacheKey, resolved);
+      return resolved;
+    } catch (error) {
+      console.warn("Reverse geocoding fallback:", error.message);
+      const fallback = fallbackLocation(normalizedPlace || siteConfig.city);
+      locationCache.set(cacheKey, fallback);
+      return fallback;
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     }
   }
 
   const matches = await findLocationMatches(normalizedPlace || siteConfig.city);
+<<<<<<< HEAD
   return matches[0] || fallbackLocation(normalizedPlace || siteConfig.city);
+=======
+  const resolved = matches[0] || fallbackLocation(normalizedPlace || siteConfig.city);
+  locationCache.set(cacheKey, resolved);
+  return resolved;
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 }
 
 function weatherLabel(code) {
@@ -323,7 +406,10 @@ function normalizeStatus(value) {
   return "Low";
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function determineHeatRisk(current, daily) {
   const apparent = current.apparent_temperature || current.temperature_2m || 0;
   const uvMax = daily.uv_index_max?.[0] || 0;
@@ -336,6 +422,7 @@ function determineHeatRisk(current, daily) {
   return "Low";
 }
 
+<<<<<<< HEAD
 function determinePeakHeatRisk(daily) {
   const temps = Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max : [];
   const uvs = Array.isArray(daily.uv_index_max) ? daily.uv_index_max : [];
@@ -349,6 +436,8 @@ function determinePeakHeatRisk(daily) {
   return peak;
 }
 
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function determineFloodRisk(current, daily) {
   const rainNow = (current.precipitation || 0) + (current.rain || 0) + (current.showers || 0);
   const rainDay = daily.precipitation_sum?.[0] || 0;
@@ -387,6 +476,10 @@ function determinePeakFloodRisk(daily) {
   return peak;
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function buildTrendValue(today, tomorrow, suffix) {
   if (typeof today !== "number" || typeof tomorrow !== "number") {
     return "Stable";
@@ -422,7 +515,10 @@ function distanceKm(fromLat, fromLon, toLat, toLon) {
   return earthRadius * c;
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function formatDistance(distance) {
   return distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`;
 }
@@ -514,10 +610,17 @@ function finalizeReliefResults(elements, latitude, longitude, mode) {
     .sort((a, b) => a.distanceKm - b.distanceKm);
 
   if (mode === "citywide") {
+<<<<<<< HEAD
     return sampleDistributedFacilities(mapped, 10).sort((a, b) => a.distanceKm - b.distanceKm);
   }
 
   return mapped.slice(0, 10);
+=======
+    return sampleDistributedFacilities(mapped, 5).sort((a, b) => a.distanceKm - b.distanceKm);
+  }
+
+  return mapped.slice(0, 5);
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 }
 
 async function fetchNearbyReliefLocations(latitude, longitude, mode = "nearby") {
@@ -544,7 +647,11 @@ out center tags;
     try {
       const payload = await fetchJson(endpoint, {
         method: "POST",
+<<<<<<< HEAD
         timeoutMs: 1800,
+=======
+        timeoutMs: 3500,
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
         headers: {
           "Content-Type": "text/plain;charset=UTF-8"
         },
@@ -567,11 +674,18 @@ out center tags;
 async function fallbackReliefSearch(locationLabel, latitude, longitude, mode = "nearby") {
   const categories = ["hospital", "clinic", "community centre", "shelter", "school"];
   const dedupe = new Set();
+<<<<<<< HEAD
   const settled = await Promise.allSettled(
+=======
+  const collected = [];
+
+  const searchResults = await Promise.allSettled(
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     categories.map(async (category) => {
       const searchUrl = new URL("https://nominatim.openstreetmap.org/search");
       searchUrl.searchParams.set("q", mode === "citywide" ? `${category} in ${locationLabel}` : `${category} near ${locationLabel}`);
       searchUrl.searchParams.set("format", "jsonv2");
+<<<<<<< HEAD
       searchUrl.searchParams.set("limit", mode === "citywide" ? "6" : "4");
       searchUrl.searchParams.set("addressdetails", "1");
 
@@ -610,15 +724,62 @@ async function fallbackReliefSearch(locationLabel, latitude, longitude, mode = "
           distanceKm: distance,
           distanceLabel: formatDistance(distance)
         });
+=======
+      searchUrl.searchParams.set("limit", "5");
+      searchUrl.searchParams.set("addressdetails", "1");
+
+      return {
+        category,
+        results: await fetchJson(searchUrl, { timeoutMs: 2500 })
+      };
+    })
+  );
+
+  for (const entry of searchResults) {
+    if (entry.status !== "fulfilled") {
+      console.warn("Fallback relief search unavailable:", entry.reason?.message || entry.reason);
+      continue;
+    }
+
+    const { category, results } = entry.value;
+    for (const item of Array.isArray(results) ? results : []) {
+      const key = `${item.display_name}-${item.lat}-${item.lon}`;
+      if (dedupe.has(key)) {
+        continue;
+      }
+      dedupe.add(key);
+
+      const resultLat = Number(item.lat);
+      const resultLon = Number(item.lon);
+      const distance = distanceKm(latitude, longitude, resultLat, resultLon);
+
+      collected.push({
+        id: key,
+        name: item.display_name.split(",")[0],
+        address: item.display_name,
+        type: category[0].toUpperCase() + category.slice(1),
+        status: mode === "nearby" ? "Nearby" : "Citywide",
+        latitude: resultLat,
+        longitude: resultLon,
+        distanceKm: distance,
+        distanceLabel: formatDistance(distance)
+      });
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     }
   }
 
   const sorted = collected.sort((a, b) => a.distanceKm - b.distanceKm);
+<<<<<<< HEAD
   return mode === "citywide" ? sampleDistributedFacilities(sorted, 10).sort((a, b) => a.distanceKm - b.distanceKm) : sorted.slice(0, 10);
 }
 
 
 
+=======
+  return mode === "citywide" ? sampleDistributedFacilities(sorted, 5).sort((a, b) => a.distanceKm - b.distanceKm) : sorted.slice(0, 5);
+}
+
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 async function fetchOpenWeatherCurrent(latitude, longitude) {
   if (!OPENWEATHER_API_KEY) {
     return null;
@@ -631,7 +792,11 @@ async function fetchOpenWeatherCurrent(latitude, longitude) {
   url.searchParams.set("appid", OPENWEATHER_API_KEY);
 
   try {
+<<<<<<< HEAD
     return await fetchJson(url, { timeoutMs: 2200 });
+=======
+    return await fetchJson(url);
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   } catch (error) {
     console.warn("OpenWeather current unavailable:", error.message);
     return null;
@@ -651,7 +816,11 @@ async function fetchOpenWeatherAlerts(latitude, longitude) {
   url.searchParams.set("appid", OPENWEATHER_API_KEY);
 
   try {
+<<<<<<< HEAD
     const payload = await fetchJson(url, { timeoutMs: 2200 });
+=======
+    const payload = await fetchJson(url);
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     return Array.isArray(payload.alerts) ? payload.alerts : [];
   } catch (error) {
     console.warn("OpenWeather alerts unavailable:", error.message);
@@ -659,10 +828,14 @@ async function fetchOpenWeatherAlerts(latitude, longitude) {
   }
 }
 
+<<<<<<< HEAD
 
 
 function classifyHeatBand(apparentTemperature) {
 
+=======
+function classifyHeatBand(apparentTemperature) {
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   if (apparentTemperature >= 40) {
     return "Extreme";
   }
@@ -682,6 +855,7 @@ function classifyFloodBand(probability, rainTotal) {
   return "Routine";
 }
 
+<<<<<<< HEAD
 function buildMetricCards(current, daily, heatRisk, floodRisk) {
   return [
     {
@@ -690,11 +864,41 @@ function buildMetricCards(current, daily, heatRisk, floodRisk) {
       value: `${Math.round(current.apparent_temperature)} C`,
       status: heatRisk,
       detail: "Daily apparent temperature index"
+=======
+function estimateFieldReadiness(current, heatRisk, floodRisk) {
+  const base = 92;
+  const heatPenalty = heatRisk === "High" ? 7 : heatRisk === "Moderate" ? 3 : 0;
+  const floodPenalty = floodRisk === "High" ? 8 : floodRisk === "Moderate" ? 4 : 0;
+  const windPenalty = (current.wind_gusts_10m || 0) > 35 ? 3 : 0;
+  return `${Math.max(72, base - heatPenalty - floodPenalty - windPenalty)}%`;
+}
+
+function dominantRisk(heatRisk, floodRisk) {
+  if (heatRisk === "High" || floodRisk === "High") {
+    return heatRisk === "High" ? "Heat" : "Flood";
+  }
+  if (heatRisk === "Moderate" || floodRisk === "Moderate") {
+    return heatRisk === "Moderate" ? "Heat" : "Flood";
+  }
+  return "Stable";
+}
+
+function buildMetricCards(current, daily, heatRisk, floodRisk) {
+  const rainfall = Number(daily.precipitation_sum?.[0] || 0);
+  return [
+    {
+      id: "temperature",
+      label: "Air Temperature",
+      value: `${Math.round(current.temperature_2m)} C`,
+      detail: `Feels like ${Math.round(current.apparent_temperature)} C`,
+      status: heatRisk
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     },
     {
       id: "humidity",
       label: "Humidity",
       value: `${Math.round(current.relative_humidity_2m)}%`,
+<<<<<<< HEAD
       status: normalizeStatus(current.relative_humidity_2m),
       detail: "Relative atmospheric moisture"
     },
@@ -725,10 +929,57 @@ function buildMetricCards(current, daily, heatRisk, floodRisk) {
       value: `${(current.precipitation || 0).toFixed(1)} mm`,
       status: floodRisk,
       detail: "Instant rainfall intensity"
+=======
+      detail: weatherLabel(current.weather_code),
+      status: normalizeStatus(current.relative_humidity_2m)
+    },
+    {
+      id: "rainfall",
+      label: "Rain Today",
+      value: `${rainfall.toFixed(1)} mm`,
+      detail: `${daily.precipitation_probability_max?.[0] || 0}% chance of measurable rain`,
+      status: floodRisk
+    },
+    {
+      id: "wind",
+      label: "Wind Speed",
+      value: `${Math.round(current.wind_speed_10m)} km/h`,
+      detail: `Gusts up to ${Math.round(current.wind_gusts_10m || current.wind_speed_10m)} km/h`,
+      status: normalizeStatus(current.wind_speed_10m)
+    },
+    {
+      id: "pressure",
+      label: "Pressure",
+      value: `${Math.round(current.surface_pressure)} hPa`,
+      detail: `${Math.round(current.cloud_cover)}% cloud cover`,
+      status: "Low"
+    },
+    {
+      id: "uv",
+      label: "UV Index Max",
+      value: `${Math.round(daily.uv_index_max?.[0] || 0)}`,
+      detail: "Peak sunlight stress for today",
+      status: heatRisk
+    },
+    {
+      id: "heat-band",
+      label: "Heat Band",
+      value: classifyHeatBand(current.apparent_temperature || current.temperature_2m),
+      detail: "Derived from live apparent temperature",
+      status: heatRisk
+    },
+    {
+      id: "field-readiness",
+      label: "Field Readiness",
+      value: estimateFieldReadiness(current, heatRisk, floodRisk),
+      detail: `Dominant operational risk: ${dominantRisk(heatRisk, floodRisk)}`,
+      status: heatRisk === "High" || floodRisk === "High" ? "High" : "Low"
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     }
   ];
 }
 
+<<<<<<< HEAD
 function buildDynamicHeatHotspots(live) {
   const current = live.forecast.current;
   const daily = live.forecast.daily;
@@ -828,6 +1079,8 @@ function buildResponseChecklist(live, overview, incidents) {
   return priorities.slice(0, 6);
 }
 
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function buildLiveSignals(live, heatRisk, floodRisk) {
   const current = live.forecast.current;
   const daily = live.forecast.daily;
@@ -897,6 +1150,7 @@ function buildCombinedIncidents(live, heatRisk, floodRisk) {
 
 async function getLiveContext(place, latitude, longitude, options = {}) {
   const includeRelief = Boolean(options.includeRelief);
+<<<<<<< HEAD
   const includeForecast = options.includeForecast !== false;
   const includeOfficialAlerts = Boolean(options.includeOfficialAlerts);
   const includeCurrentWeather = options.includeCurrentWeather !== false;
@@ -906,6 +1160,9 @@ async function getLiveContext(place, latitude, longitude, options = {}) {
     includeOfficialAlerts,
     includeCurrentWeather
   });
+=======
+  const cacheKey = cacheKeyFor(place || siteConfig.city, latitude, longitude, includeRelief);
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   const cached = liveCache.entries.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.payload;
@@ -923,6 +1180,7 @@ async function getLiveContext(place, latitude, longitude, options = {}) {
   const reliefMode = Number.isFinite(latitude) && Number.isFinite(longitude) ? "nearby" : "citywide";
 
   const forecastUrl = new URL("https://api.open-meteo.com/v1/forecast");
+<<<<<<< HEAD
   if (includeForecast) {
     forecastUrl.searchParams.set("latitude", String(resolvedLatitude));
     forecastUrl.searchParams.set("longitude", String(resolvedLongitude));
@@ -977,6 +1235,57 @@ async function getLiveContext(place, latitude, longitude, options = {}) {
   ]);
 
   if (forecast && openWeatherCurrent?.main) {
+=======
+  forecastUrl.searchParams.set("latitude", String(resolvedLatitude));
+  forecastUrl.searchParams.set("longitude", String(resolvedLongitude));
+  forecastUrl.searchParams.set("timezone", siteConfig.timezone);
+  forecastUrl.searchParams.set("forecast_days", "3");
+  forecastUrl.searchParams.set(
+    "current",
+    [
+      "temperature_2m",
+      "relative_humidity_2m",
+      "apparent_temperature",
+      "precipitation",
+      "rain",
+      "showers",
+      "wind_speed_10m",
+      "wind_gusts_10m",
+      "surface_pressure",
+      "cloud_cover",
+      "weather_code"
+    ].join(",")
+  );
+  forecastUrl.searchParams.set(
+    "daily",
+    [
+      "weather_code",
+      "temperature_2m_max",
+      "temperature_2m_min",
+      "precipitation_sum",
+      "precipitation_probability_max",
+      "uv_index_max",
+      "wind_speed_10m_max"
+    ].join(",")
+  );
+
+  const [forecast, officialAlerts, openWeatherCurrent, nearbyReliefLocations] = await Promise.all([
+    fetchJson(forecastUrl),
+    fetchOpenWeatherAlerts(resolvedLatitude, resolvedLongitude),
+    fetchOpenWeatherCurrent(resolvedLatitude, resolvedLongitude),
+    includeRelief
+      ? (async () => {
+          const direct = await fetchNearbyReliefLocations(resolvedLatitude, resolvedLongitude, reliefMode);
+          if (direct.length > 0) {
+            return direct;
+          }
+          return fallbackReliefSearch(locationLabel, resolvedLatitude, resolvedLongitude, reliefMode);
+        })()
+      : Promise.resolve([])
+  ]);
+
+  if (openWeatherCurrent?.main) {
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     forecast.current.temperature_2m = openWeatherCurrent.main.temp;
     forecast.current.apparent_temperature = openWeatherCurrent.main.feels_like;
     forecast.current.relative_humidity_2m = openWeatherCurrent.main.humidity;
@@ -1010,13 +1319,21 @@ async function getLiveContext(place, latitude, longitude, options = {}) {
   return payload;
 }
 
+<<<<<<< HEAD
 function buildOverviewPayload(live, type = "home") {
+=======
+function buildOverviewPayload(live) {
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   const current = live.forecast.current;
   const daily = live.forecast.daily;
   const heatRisk = determineHeatRisk(current, daily);
   const floodRisk = determineFloodRisk(current, daily);
   const peakFloodRisk = determinePeakFloodRisk(daily);
+<<<<<<< HEAD
   const incidents = listUserReports();
+=======
+  const incidents = buildCombinedIncidents(live, heatRisk, floodRisk);
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
   return {
     location: formatLocationLabel(live.location),
@@ -1028,7 +1345,10 @@ function buildOverviewPayload(live, type = "home") {
     lastUpdated: live.fetchedAt,
     refreshMinutes: siteConfig.refreshMinutes,
     hero: content.hero,
+<<<<<<< HEAD
     summary: `${weatherLabel(current.weather_code)}. ${Math.round(current.temperature_2m)} C and ${daily.precipitation_sum?.[0]?.toFixed(1) || 0} mm forecast rainfall today.`,
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     metrics: buildMetricCards(current, daily, heatRisk, floodRisk),
     alerts: [
       {
@@ -1108,7 +1428,10 @@ function buildHeatPayload(live) {
     pageTitle: "Heat Risk Center",
     selectedCity: live.requestedPlace,
     riskLevel,
+<<<<<<< HEAD
     forecastRisk: determinePeakHeatRisk(daily),
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     summary: `Live temperature and UV readings indicate ${riskLevel.toLowerCase()} to elevated heat stress potential across ${live.location.name}.`,
     indicators: [
       { label: "Heat Index", value: `${Math.round(current.apparent_temperature)} C`, note: "Current apparent temperature" },
@@ -1116,8 +1439,13 @@ function buildHeatPayload(live) {
       { label: "Humidity", value: `${Math.round(current.relative_humidity_2m)}%`, note: "Humidity directly affects how hot it feels" },
       { label: "UV Index Max", value: `${Math.round(daily.uv_index_max?.[0] || 0)}`, note: "Expected peak UV today" }
     ],
+<<<<<<< HEAD
     hotspots: buildDynamicHeatHotspots(live),
     recommendations: buildDynamicHeatActions(live, riskLevel),
+=======
+    hotspots: content.heatHotspots,
+    recommendations: content.heatActions,
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     forecast: daily.time.map((day, index) => ({
       day: index === 0 ? "Today" : index === 1 ? "Tomorrow" : "Day 3",
       condition: weatherLabel(daily.weather_code[index]),
@@ -1152,8 +1480,13 @@ function buildFloodPayload(live) {
       { label: "Current Precipitation", value: `${(current.precipitation || 0).toFixed(1)} mm`, note: "Instant precipitation rate" },
       { label: "Wind Max", value: `${Math.round(daily.wind_speed_10m_max?.[0] || 0)} km/h`, note: "Stronger gusts can worsen road conditions" }
     ],
+<<<<<<< HEAD
     hotspots: buildDynamicFloodHotspots(live),
     recommendations: buildDynamicFloodActions(live, riskLevel, forecastRisk),
+=======
+    hotspots: content.floodHotspots,
+    recommendations: content.floodActions,
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     forecast: daily.time.map((day, index) => ({
       day: index === 0 ? "Today" : index === 1 ? "Tomorrow" : "Day 3",
       condition: weatherLabel(daily.weather_code[index]),
@@ -1172,17 +1505,29 @@ function buildFloodPayload(live) {
 
 function buildResponsePayload(live) {
   const overview = buildOverviewPayload(live);
+<<<<<<< HEAD
   const incidents = listUserReports();
   const shelters = live.nearbyReliefLocations || [];
+=======
+  const incidents = buildCombinedIncidents(live, overview.heatRisk, overview.floodRisk);
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
   return {
     ...content.response,
     selectedCity: live.requestedPlace,
+<<<<<<< HEAD
     shelters,
     reliefStatus: shelters.length
       ? live.reliefMode === "nearby"
         ? `Showing ${shelters.length} nearest mapped facilities around your precise location in ${formatLocationLabel(live.location)}.`
         : `Showing ${shelters.length} mapped relief points across ${formatLocationLabel(live.location)}.`
+=======
+    shelters: live.nearbyReliefLocations,
+    reliefStatus: live.nearbyReliefLocations.length
+      ? live.reliefMode === "nearby"
+        ? `Showing ${live.nearbyReliefLocations.length} nearest mapped facilities around your precise location in ${formatLocationLabel(live.location)}.`
+        : `Showing ${live.nearbyReliefLocations.length} mapped relief points across ${formatLocationLabel(live.location)}.`
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
       : "Live relief locations are temporarily unavailable from the map provider.",
     reliefScope: live.reliefMode === "nearby" ? "Precise location" : "Citywide coverage",
     operationalStatus: {
@@ -1194,11 +1539,15 @@ function buildResponsePayload(live) {
     location: overview.location,
     source: live.sources,
     lastUpdated: live.fetchedAt,
+<<<<<<< HEAD
     checklist: buildResponseChecklist(live, overview, incidents),
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     incidents
   };
 }
 
+<<<<<<< HEAD
 function buildResponseReliefPayload(live) {
   const shelters = live.nearbyReliefLocations || [];
 
@@ -1215,6 +1564,8 @@ function buildResponseReliefPayload(live) {
   };
 }
 
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 async function handleApi(req, res, pathname) {
   try {
     const requestUrl = new URL(req.url, `http://${req.headers.host}`);
@@ -1262,19 +1613,27 @@ async function handleApi(req, res, pathname) {
       return true;
     }
 
+<<<<<<< HEAD
 
     if (req.method === "GET" && pathname === "/api/response") {
       const live = await getLiveContext(place, latitude, longitude, { includeRelief: false });
+=======
+    if (req.method === "GET" && pathname === "/api/response") {
+      const live = await getLiveContext(place, latitude, longitude, { includeRelief: true });
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
       sendJson(res, 200, buildResponsePayload(live));
       return true;
     }
 
+<<<<<<< HEAD
     if (req.method === "GET" && pathname === "/api/response-relief") {
       const live = await getLiveContext(place, latitude, longitude, { includeRelief: true, includeForecast: false, includeCurrentWeather: false });
       sendJson(res, 200, buildResponseReliefPayload(live));
       return true;
     }
 
+=======
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     if (req.method === "GET" && pathname === "/api/incidents") {
       sendJson(res, 200, { incidents: listUserReports() });
       return true;
@@ -1299,6 +1658,7 @@ async function handleApi(req, res, pathname) {
       return true;
     }
 
+<<<<<<< HEAD
     if (req.method === "POST" && pathname === "/api/incidents/delete") {
       const payload = await parseBody(req);
       const { id } = payload;
@@ -1314,6 +1674,25 @@ async function handleApi(req, res, pathname) {
       } else {
         sendJson(res, 404, { error: "Incident record not found" });
       }
+=======
+    const incidentMatch = pathname.match(/^\/api\/incidents\/(\d+)$/);
+    if (req.method === "DELETE" && incidentMatch) {
+      const payload = await parseBody(req);
+      const review = String(payload.review || "").trim();
+
+      if (!review) {
+        sendJson(res, 400, { error: "A short review is required before removing the incident" });
+        return true;
+      }
+
+      const incident = removeUserReport(incidentMatch[1], review);
+      if (!incident) {
+        sendJson(res, 404, { error: "Incident not found" });
+        return true;
+      }
+
+      sendJson(res, 200, { message: "Incident removed", incident });
+>>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
       return true;
     }
 
