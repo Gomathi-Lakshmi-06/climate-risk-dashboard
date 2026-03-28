@@ -106,11 +106,7 @@ function usePreciseLocation() {
   return { location, status, requestPreciseLocation, clearPreciseLocation };
 }
 
-<<<<<<< HEAD
 function buildApiUrl(path, city, preciseLocation, type) {
-=======
-function buildApiUrl(path, city, preciseLocation) {
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   const url = new URL(path, window.location.origin);
   if (city) {
     url.searchParams.set("city", city);
@@ -119,12 +115,9 @@ function buildApiUrl(path, city, preciseLocation) {
     url.searchParams.set("lat", preciseLocation.latitude);
     url.searchParams.set("lon", preciseLocation.longitude);
   }
-<<<<<<< HEAD
   if (type) {
     url.searchParams.set("type", type);
   }
-=======
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   return `${url.pathname}${url.search}`;
 }
 
@@ -165,11 +158,7 @@ function useFetch(url, refreshMs) {
         .catch((error) => {
           if (active) {
             setState((current) => ({
-<<<<<<< HEAD
               loading: false,
-=======
-              loading: current.data ? false : true,
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
               data: current.data,
               error: error.message
             }));
@@ -182,17 +171,9 @@ function useFetch(url, refreshMs) {
 
     return () => {
       active = false;
-<<<<<<< HEAD
       if (timer) window.clearInterval(timer);
     };
   }, [url]);
-=======
-      if (timer) {
-        window.clearInterval(timer);
-      }
-    };
-  }, [url, refreshMs]);
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
   return state;
 }
@@ -288,7 +269,6 @@ function LocationPicker(props) {
     setOpen(false);
   }
 
-<<<<<<< HEAD
   function bestMatchedLocation() {
     const normalizedQuery = query.trim().toLowerCase();
     if (!results.length) {
@@ -302,8 +282,6 @@ function LocationPicker(props) {
     );
   }
 
-=======
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   return e(
     "div",
     { className: "city-picker" },
@@ -327,14 +305,11 @@ function LocationPicker(props) {
           type: "button",
           className: "city-apply-button",
           onClick: () => {
-<<<<<<< HEAD
             const matched = bestMatchedLocation();
             if (matched) {
               selectLocation(matched);
               return;
             }
-=======
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
             props.onSelect(query.trim() || "Chennai");
             props.onClearPrecise();
             setOpen(false);
@@ -420,7 +395,6 @@ function Layout(props) {
         "div",
         { className: "topbar-controls" },
         e(
-<<<<<<< HEAD
           "div",
           { className: "topbar-location" },
           e(LocationPicker, {
@@ -433,8 +407,6 @@ function Layout(props) {
           })
         ),
         e(
-=======
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           "nav",
           { className: "nav-links", "aria-label": "Main navigation" },
           navItems.map((item) =>
@@ -448,34 +420,10 @@ function Layout(props) {
               item.label
             )
           )
-<<<<<<< HEAD
         )
       )
     ),
     props.children
-=======
-        ),
-        e(
-          "div",
-          { className: "topbar-location" },
-          e(LocationPicker, {
-            selectedCity: props.selectedCity,
-            onSelect: props.onSelectCity,
-            preciseLocation: props.preciseLocation,
-            onRequestPrecise: props.onRequestPreciseLocation,
-            onClearPrecise: props.onClearPreciseLocation,
-            locationStatus: props.locationStatus
-          })
-        )
-      )
-    ),
-    props.children,
-    e(
-      "footer",
-      { className: "footer" },
-      e("div", null, props.footerText || "Live weather and response context refresh automatically.")
-    )
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   );
 }
 
@@ -498,11 +446,7 @@ function Hero(props) {
 function MetricCard(metric) {
   return e(
     "article",
-<<<<<<< HEAD
     { className: `card reveal ${metric.featured ? "metric-card featured" : "metric-card"}`, key: metric.id || metric.label },
-=======
-    { className: "card reveal", key: metric.id || metric.label },
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     e("div", { className: "card-label" }, metric.label),
     e("div", { className: "metric-value" }, metric.value),
     e("div", { className: `status-pill ${severityClass(metric.status)}` }, metric.status),
@@ -510,7 +454,6 @@ function MetricCard(metric) {
   );
 }
 
-<<<<<<< HEAD
 function MetricGrid(props) {
   const items = props.items || [];
   const columnClass = items.length === 6 ? "grid-3" : "grid-2";
@@ -526,8 +469,6 @@ function MetricGrid(props) {
   );
 }
 
-=======
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function ForecastList(props) {
   return e(
     "div",
@@ -558,33 +499,6 @@ function ForecastList(props) {
   );
 }
 
-<<<<<<< HEAD
-=======
-function SourceBadge(props) {
-  return e(
-    "div",
-    { className: "source-badge" },
-    `Last updated ${formatDate(props.updatedAt)} | auto refresh every ${props.refreshMinutes} min`
-  );
-}
-
-function LoadingPanel(props) {
-  return e(
-    "div",
-    { className: "loading-state" },
-    e(
-      "div",
-      { className: "loading-orb", "aria-hidden": "true" },
-      e("span", { className: "loading-ring loading-ring--one" }),
-      e("span", { className: "loading-ring loading-ring--two" }),
-      e("span", { className: "loading-core" })
-    ),
-    e("p", { className: "loading-title" }, props.title),
-    e("p", { className: "loading-caption" }, props.caption || "Pulling live climate signals and preparing the view.")
-  );
-}
-
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function pageLayoutProps(props, data, page, footerText) {
   return {
     page,
@@ -603,11 +517,7 @@ function HomePage(props) {
   const overview = useFetch(buildApiUrl("/api/overview", props.selectedCity, props.preciseLocation), 600000);
 
   if (overview.loading && !overview.data) {
-<<<<<<< HEAD
     return e(Layout, pageLayoutProps(props, null, "index"), e("div", { className: "loading-state" }, "Loading climate overview..."));
-=======
-    return e(Layout, pageLayoutProps(props, null, "index"), e(LoadingPanel, { title: "Loading climate overview..." }));
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   }
 
   if (overview.error && !overview.data) {
@@ -632,18 +542,10 @@ function HomePage(props) {
         aside: e(
           "div",
           { className: "hero-aside-card" },
-<<<<<<< HEAD
           e("div", { className: "hero-risk-grid" },
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Heat"), e("strong", null, data.heatRisk)),
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
             e("div", { className: "hero-risk-tile full" }, e("span", { className: "muted" }, "Now"), e("strong", null, data.summary))
-=======
-          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes }),
-          e("div", { className: "hero-risk-grid" },
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Heat"), e("strong", null, data.heatRisk)),
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood outlook"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Incidents"), e("strong", null, String(data.incidentCount)))
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           )
         )
       }
@@ -654,16 +556,9 @@ function HomePage(props) {
       e(
         "div",
         { className: "section-heading" },
-<<<<<<< HEAD
         e("div", null, e("h2", null, "Live place indicators"), e("p", null, "Current field conditions derived from live location-aware weather feeds."))
       ),
       e(MetricGrid, { items: data.metrics })
-=======
-        e("div", null, e("h2", null, "Live place indicators"), e("p", null, "Current field conditions derived from live location-aware weather feeds.")),
-        e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes })
-      ),
-      e("div", { className: "grid metrics" }, data.metrics.map(MetricCard))
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     ),
     e(
       "section",
@@ -679,17 +574,10 @@ function HomePage(props) {
 }
 
 function DashboardPage(props) {
-<<<<<<< HEAD
   const overview = useFetch(buildApiUrl("/api/overview", props.selectedCity, props.preciseLocation, "dashboard"), 600000);
 
   if (overview.loading && !overview.data) {
     return e(Layout, pageLayoutProps(props, null, "dashboard"), e("div", { className: "loading-state" }, "Loading live dashboard..."));
-=======
-  const overview = useFetch(buildApiUrl("/api/overview", props.selectedCity, props.preciseLocation), 600000);
-
-  if (overview.loading && !overview.data) {
-    return e(Layout, pageLayoutProps(props, null, "dashboard"), e(LoadingPanel, { title: "Loading live dashboard..." }));
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   }
 
   if (overview.error && !overview.data) {
@@ -705,7 +593,6 @@ function DashboardPage(props) {
       Hero,
       {
         eyebrow: "Operations dashboard",
-<<<<<<< HEAD
         title: "Climate posture analysis",
         description: "Track live conditions, scan the next 48 to 72 hours for temperature and rainfall shifts, and review the location currently driving the dashboard data.",
         aside: e(
@@ -715,29 +602,11 @@ function DashboardPage(props) {
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Heat"), e("strong", null, data.heatRisk)),
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
             e("div", { className: "hero-risk-tile full" }, e("span", { className: "muted" }, "Now"), e("strong", null, data.summary))
-=======
-        title: "Real-time urban climate posture",
-        description: "Track live conditions, scan the next 72 hours for temperature and rainfall shifts, and review the exact place currently driving the dashboard.",
-        aside: e(
-          "div",
-          { className: "hero-aside-card" },
-          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes }),
-          e(
-            "div",
-            { className: "kpi-strip compact" },
-            e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Heat posture"), e("strong", null, data.heatRisk)),
-            e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Flood outlook"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
-            e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Live incidents"), e("strong", null, String(data.incidentCount)))
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           )
         )
       }
     ),
-<<<<<<< HEAD
     e("section", { className: "section" }, e(MetricGrid, { items: data.metrics })),
-=======
-    e("section", { className: "section" }, e("div", { className: "grid metrics" }, data.metrics.map(MetricCard))),
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     e(
       "section",
       { className: "section" },
@@ -779,10 +648,6 @@ function DashboardPage(props) {
                 ["Heat posture", data.heatRisk],
                 ["Flood today", data.floodRisk],
                 ["Flood next 3 days", data.peakFloodRisk || data.floodRisk],
-<<<<<<< HEAD
-=======
-                ["Live incidents", String(data.incidentCount)],
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
                 ["Last refresh", formatDate(data.lastUpdated)]
               ].map(([label, value]) =>
                 e(
@@ -804,11 +669,7 @@ function RiskPage(props) {
   const response = useFetch(buildApiUrl(`/api/risks/${props.type}`, props.selectedCity, props.preciseLocation), 600000);
 
   if (response.loading && !response.data) {
-<<<<<<< HEAD
     return e(Layout, pageLayoutProps(props, null, props.type), e("div", { className: "loading-state" }, `Loading ${props.type} risk data...`));
-=======
-    return e(Layout, pageLayoutProps(props, null, props.type), e(LoadingPanel, { title: `Loading ${props.type} risk data...` }));
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   }
 
   if (response.error && !response.data) {
@@ -829,27 +690,14 @@ function RiskPage(props) {
         aside: e(
           "div",
           { className: "hero-aside-card" },
-<<<<<<< HEAD
           e("div", { className: "hero-risk-grid" },
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Current risk"), e("strong", null, data.riskLevel)),
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "3-day outlook"), e("strong", null, data.forecastRisk || data.riskLevel))
-=======
-          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: 10 }),
-          e("div", { className: "hero-risk-grid" },
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Current risk"), e("strong", null, data.riskLevel)),
-            props.type === "flood"
-              ? e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "3-day outlook"), e("strong", null, data.forecastRisk || data.riskLevel))
-              : e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Refresh"), e("strong", null, "10 min"))
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           )
         )
       }
     ),
-<<<<<<< HEAD
     e("section", { className: "section" }, e(MetricGrid, { items: data.indicators })),
-=======
-    e("section", { className: "section" }, e("div", { className: "grid metrics" }, data.indicators.map(MetricCard))),
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     e(
       "section",
       { className: "section" },
@@ -859,11 +707,7 @@ function RiskPage(props) {
         e(
           "div",
           { className: "panel reveal" },
-<<<<<<< HEAD
           e("h3", null, props.type === "heat" ? "Live heat observations" : "Live flood observations"),
-=======
-          e("h3", null, "Priority hotspots"),
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           e(
             "ul",
             { className: "list" },
@@ -888,11 +732,7 @@ function RiskPage(props) {
 
 function ResponsePage(props) {
   const response = useFetch(buildApiUrl("/api/response", props.selectedCity, props.preciseLocation), 600000);
-<<<<<<< HEAD
   const relief = useFetch(buildApiUrl("/api/response-relief", props.selectedCity, props.preciseLocation), 600000);
-=======
-  const [selectedShelterIndex, setSelectedShelterIndex] = React.useState(0);
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   const [form, setForm] = React.useState({
     title: "",
     location: "",
@@ -901,21 +741,10 @@ function ResponsePage(props) {
   });
   const [submitState, setSubmitState] = React.useState({ loading: false, message: "", error: "" });
   const [incidents, setIncidents] = React.useState([]);
-<<<<<<< HEAD
-=======
-  const [removeState, setRemoveState] = React.useState({ loadingId: null, message: "", error: "" });
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
   React.useEffect(() => {
     if (response.data) {
       setIncidents(response.data.incidents || []);
-<<<<<<< HEAD
-=======
-      setSelectedShelterIndex((current) =>
-        Math.min(current, Math.max(0, (response.data.shelters || []).length - 1))
-      );
-      setRemoveState({ loadingId: null, message: "", error: "" });
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     }
   }, [response.data]);
 
@@ -947,59 +776,8 @@ function ResponsePage(props) {
       });
   }
 
-<<<<<<< HEAD
   if (response.loading && !response.data) {
     return e(Layout, pageLayoutProps(props, null, "response"), e("div", { className: "loading-state" }, "Loading response hub..."));
-=======
-  function onRemoveIncident(incident) {
-    const review = window.prompt("Before removing this incident, share a short review about the work done to resolve it.");
-    if (review === null) {
-      return;
-    }
-
-    const trimmedReview = review.trim();
-    if (!trimmedReview) {
-      setRemoveState({
-        loadingId: null,
-        message: "",
-        error: "Please add a short review before removing the incident."
-      });
-      return;
-    }
-
-    const confirmed = window.confirm("Remove this incident from the board now?");
-    if (!confirmed) {
-      return;
-    }
-
-    setRemoveState({ loadingId: incident.id, message: "", error: "" });
-
-    fetch(`/api/incidents/${incident.id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ review: trimmedReview })
-    })
-      .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
-      .then(({ ok, body }) => {
-        if (!ok) {
-          throw new Error(body.error || "Could not remove incident");
-        }
-
-        setIncidents((current) => current.filter((item) => item.id !== incident.id));
-        setRemoveState({
-          loadingId: null,
-          message: "Incident removed after recording the completion review.",
-          error: ""
-        });
-      })
-      .catch((error) => {
-        setRemoveState({ loadingId: null, message: "", error: error.message });
-      });
-  }
-
-  if (response.loading && !response.data) {
-    return e(Layout, pageLayoutProps(props, null, "response"), e(LoadingPanel, { title: "Loading response hub..." }));
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
   }
 
   if (response.error && !response.data) {
@@ -1007,14 +785,10 @@ function ResponsePage(props) {
   }
 
   const data = response.data;
-<<<<<<< HEAD
   const reliefData = relief.data;
   const shelters = reliefData?.shelters || [];
   const reliefStatus = reliefData?.reliefStatus || "Matching the selected place to live relief-map data...";
   const reliefScope = reliefData?.reliefScope || data.reliefScope || "Citywide coverage";
-=======
-  const selectedShelter = data.shelters[selectedShelterIndex] || data.shelters[0];
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 
   return e(
     Layout,
@@ -1028,10 +802,6 @@ function ResponsePage(props) {
         aside: e(
           "div",
           { className: "hero-aside-card" },
-<<<<<<< HEAD
-=======
-          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes }),
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           e("div", { className: "hero-risk-grid" },
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Heat"), e("strong", null, data.operationalStatus.heatRisk)),
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood"), e("strong", null, data.operationalStatus.floodRisk)),
@@ -1047,20 +817,13 @@ function ResponsePage(props) {
         "div",
         { className: "kpi-strip response-overview reveal" },
         e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Selected place"), e("strong", null, data.location)),
-<<<<<<< HEAD
         e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Relief coverage"), e("strong", null, reliefScope)),
         e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Nearby relief points"), e("strong", null, relief.loading && !reliefData ? "Loading..." : String(shelters.length))),
         e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "User reports"), e("strong", null, String(incidents.length)))
-=======
-        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Relief coverage"), e("strong", null, data.reliefScope || "Citywide coverage")),
-        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Nearby relief points"), e("strong", null, String(data.shelters.length))),
-        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Live source"), e("strong", null, data.source?.relief || "Live search"))
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
       ),
       e(
         "div",
         { className: "panel reveal section-note" },
-<<<<<<< HEAD
         e("p", null, reliefStatus)
       ),
         e(
@@ -1070,18 +833,6 @@ function ResponsePage(props) {
             "div",
             { className: "panel reveal response-left-panel" },
             e("h3", null, "Emergency contacts"),
-=======
-        e("p", null, data.reliefStatus || "Nearby places are being fetched from live map data for the selected place.")
-      ),
-      e(
-        "div",
-        { className: "grid two response-panels" },
-        e(
-          "div",
-          { className: "panel reveal response-panel response-panel--contacts" },
-          e("h3", null, "Emergency contacts"),
-          e("p", { className: "contact-panel-note muted" }, "Choose the contact based on the kind of help needed so response teams can reach the right place faster."),
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           e(
             "div",
             { className: "contact-list" },
@@ -1089,121 +840,12 @@ function ResponsePage(props) {
               e(
                 "article",
                 { className: "contact-card", key: contact.label },
-<<<<<<< HEAD
                 e("div", null, e("h4", null, contact.label), e("p", null, contact.description)),
                 e("a", { href: contact.href, className: "link-button primary contact-button" }, contact.value)
               )
             )
           ),
           e("div", { className: "section-divider" }),
-=======
-                e(
-                  "div",
-                  { className: "contact-copy" },
-                  e("h4", null, contact.label),
-                  e("p", null, contact.description),
-                  contact.helpText ? e("p", { className: "contact-help" }, contact.helpText) : null
-                ),
-                e("a", { href: contact.href, className: "link-button primary contact-button" }, contact.value)
-              )
-            )
-          )
-        ),
-        e(
-          "div",
-          { className: "panel reveal response-panel response-panel--relief" },
-          e(
-            "div",
-            { className: "section-heading" },
-            e("div", null, e("h2", null, "Relief locations"), e("p", null, "These are live mapped response points based on your searched place or precise device location.")),
-            selectedShelter
-              ? e(
-                  "a",
-                  {
-                    href: buildMapUrl(selectedShelter.latitude, selectedShelter.longitude),
-                    target: "_blank",
-                    rel: "noreferrer",
-                    className: "link-button ghost"
-                  },
-                  "Open directions"
-                )
-              : null
-          ),
-          data.shelters.length
-            ? e(
-                "div",
-                { className: "shelter-list" },
-                data.shelters.map((shelter, index) =>
-                  e(
-                    "article",
-                    {
-                      key: shelter.id,
-                      className: `shelter-card ${index === selectedShelterIndex ? "active" : ""}`,
-                      onClick: () => setSelectedShelterIndex(index)
-                    },
-                    e(
-                      "div",
-                      null,
-                      e("h4", null, shelter.name),
-                      e("p", null, shelter.address),
-                      e(
-                        "p",
-                        { className: "muted" },
-                        data.reliefScope === "Precise location"
-                          ? `${shelter.type} | ${shelter.distanceLabel} away`
-                          : shelter.type
-                      )
-                    ),
-                    e(
-                      "div",
-                      { className: "shelter-actions" },
-                      e("span", { className: `status-pill ${severityClass(shelter.status)}` }, shelter.status),
-                      e(
-                        "a",
-                        {
-                          href: buildMapUrl(shelter.latitude, shelter.longitude),
-                          target: "_blank",
-                          rel: "noreferrer",
-                          className: "link-button ghost small",
-                          onClick: (event) => event.stopPropagation()
-                        },
-                        "Open map"
-                      )
-                    )
-                  )
-                )
-              )
-            : e(
-                "div",
-                { className: "empty-state" },
-                e("p", null, "No nearby mapped relief locations were returned for this place right now."),
-                e("p", { className: "muted" }, data.reliefStatus || "Try a more specific locality or use precise location for better results.")
-              ),
-          selectedShelter
-            ? e(
-                "div",
-                { className: "map-panel" },
-                e("iframe", {
-                  title: selectedShelter.name,
-                  src: buildMapEmbedUrl(selectedShelter.latitude, selectedShelter.longitude),
-                  className: "map-frame",
-                  loading: "lazy"
-                })
-              )
-            : null
-        )
-      )
-    ),
-    e(
-      "section",
-      { className: "section" },
-      e(
-        "div",
-        { className: "grid two" },
-        e(
-          "div",
-          { className: "panel reveal" },
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           e("h3", null, "Report an incident"),
           e(
             "form",
@@ -1228,7 +870,6 @@ function ResponsePage(props) {
             e("button", { type: "submit", disabled: submitState.loading }, submitState.loading ? "Submitting..." : "Submit incident"),
             submitState.message ? e("p", { style: { color: "var(--green)", margin: 0 } }, submitState.message) : null,
             submitState.error ? e("p", { style: { color: "var(--red)", margin: 0 } }, submitState.error) : null,
-<<<<<<< HEAD
             e("div", { className: "section-divider" }),
             e("h3", null, "Reported incidents"),
             incidents.length
@@ -1264,15 +905,10 @@ function ResponsePage(props) {
                   )
                 )
               : e("div", { className: "list-item" }, e("p", null, "No incident reports have been submitted for this session yet."))
-=======
-            removeState.message ? e("p", { style: { color: "var(--green)", margin: 0 } }, removeState.message) : null,
-            removeState.error ? e("p", { style: { color: "var(--red)", margin: 0 } }, removeState.error) : null
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
           )
         ),
         e(
           "div",
-<<<<<<< HEAD
           { className: "panel reveal response-right-panel" },
           e(
             "div",
@@ -1331,68 +967,10 @@ function ResponsePage(props) {
               )
         )
       )
-=======
-          { className: "panel reveal" },
-          e("h3", null, "Response checklist"),
-          e(
-            "ul",
-            { className: "list" },
-            data.checklist.map((item) => e("li", { className: "list-item", key: item }, e("p", null, item)))
-          )
-        )
-      )
-    ),
-    e(
-      "section",
-      { className: "section" },
-      e("div", { className: "section-heading" }, e("div", null, e("h2", null, "Incident board"), e("p", null, "Live weather signals, official alerts, and your submitted reports."))),
-      incidents.length
-        ? e(
-            "div",
-            { className: "grid two" },
-            incidents.map((incident) =>
-              e(
-                "article",
-                { className: "card reveal", key: incident.id },
-                e("div", { className: `status-pill ${severityClass(incident.severity)}` }, incident.severity),
-                e("h3", null, incident.title),
-                e("p", null, incident.description),
-                e("p", { className: "muted", style: { marginTop: "10px" } }, `${incident.location} | ${incident.status}`),
-                e(
-                  "div",
-                  { className: "action-row compact" },
-                  e("p", { className: "muted" }, `${formatDate(incident.reportedAt)} | ${incident.source}`),
-                  e(
-                    "div",
-                    { className: "incident-actions" },
-                    e("a", { href: buildQueryMapUrl(incident.location), target: "_blank", rel: "noreferrer", className: "link-button ghost small" }, "Open map"),
-                    incident.source === "User report"
-                      ? e(
-                          "button",
-                          {
-                            type: "button",
-                            className: "danger-button small",
-                            onClick: () => onRemoveIncident(incident),
-                            disabled: removeState.loadingId === incident.id
-                          },
-                          removeState.loadingId === incident.id ? "Removing..." : "Remove"
-                        )
-                      : null
-                  )
-                )
-              )
-            )
-          )
-        : e("div", { className: "empty-state" }, "No live incidents are available right now.")
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
     )
   );
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> cef72ba797417fab0af8d51fb6ea27ef218effe4
 function AppRouter() {
   const page = document.body.dataset.page;
   const [selectedCity, setSelectedCity] = useCitySelection();
