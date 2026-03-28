@@ -115,13 +115,6 @@ http://localhost:3000
 
 ---
 
-## 🔐 Environment Variables (Optional)
-
-```bash
-OPENWEATHER_API_KEY=your_api_key
-```
-
----
 
 ## 📈 Future Enhancements
 
