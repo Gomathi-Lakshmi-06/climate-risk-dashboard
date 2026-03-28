@@ -681,7 +681,15 @@ function classifyFloodBand(probability, rainTotal) {
 }
 
 function buildMetricCards(current, daily, heatRisk, floodRisk) {
+  // Comprehensive set of metrics across both heat and flood domains (8 total)
   return [
+    {
+      id: "airTemperature",
+      label: "Air Temperature",
+      value: `${Math.round(current.temperature_2m)} C`,
+      status: heatRisk,
+      detail: "Current near-surface air temperature"
+    },
     {
       id: "heatIndex",
       label: "Heat Index",
@@ -701,7 +709,14 @@ function buildMetricCards(current, daily, heatRisk, floodRisk) {
       label: "UV Index",
       value: `${Math.round(daily.uv_index_max?.[0] || 0)}`,
       status: daily.uv_index_max?.[0] >= 8 ? "High" : daily.uv_index_max?.[0] >= 3 ? "Moderate" : "Low",
-      detail: "Daily peak UV intensity"
+      detail: "Daily peak UV intensity today"
+    },
+    {
+      id: "rainToday",
+      label: "Rain Today",
+      value: `${daily.precipitation_sum?.[0].toFixed(1)} mm`,
+      status: floodRisk,
+      detail: "Forecast daily precipitation total"
     },
     {
       id: "rainProb",
@@ -711,18 +726,18 @@ function buildMetricCards(current, daily, heatRisk, floodRisk) {
       detail: "Peak chance of measurable rainfall"
     },
     {
+      id: "currentPrecip",
+      label: "Current Precip",
+      value: `${(current.precipitation || 0).toFixed(1)} mm`,
+      status: floodRisk,
+      detail: "Instant precipitation rate"
+    },
+    {
       id: "windMax",
       label: "Wind Max",
       value: `${Math.round(daily.wind_speed_10m_max?.[0] || 0)} km/h`,
       status: "Routine",
       detail: "Expected peak daily gusts"
-    },
-    {
-      id: "currentPrecip",
-      label: "Current Precip",
-      value: `${(current.precipitation || 0).toFixed(1)} mm`,
-      status: floodRisk,
-      detail: "Instant rainfall intensity"
     }
   ];
 }

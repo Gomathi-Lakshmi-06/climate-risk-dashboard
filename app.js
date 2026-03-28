@@ -1,7 +1,7 @@
 const e = React.createElement;
 const CITY_STORAGE_KEY = "climate-risk-selected-city";
 const PRECISE_LOCATION_KEY = "climate-risk-precise-location";
-const API_CACHE_PREFIX = "climate-risk-api-cache:";
+const API_CACHE_PREFIX = "climate-risk-api-cache:v2:";
 const API_CACHE_TTL_MS = 30 * 60 * 1000;
 
 function cacheKeyForUrl(url) {
@@ -456,7 +456,7 @@ function MetricCard(metric) {
 
 function MetricGrid(props) {
   const items = props.items || [];
-  const columnClass = items.length === 6 ? "grid-3" : "grid-2";
+  const columnClass = items.length === 8 ? "grid-4" : items.length === 6 ? "grid-3" : "grid-2";
   
   return e(
     "div",
@@ -525,6 +525,8 @@ function HomePage(props) {
   }
 
   const data = overview.data;
+  const homeMetricLabels = new Set(["Air Temperature", "Humidity", "Rain Probability", "Wind Max"]);
+  const homeMetrics = (data.metrics || []).filter((item) => homeMetricLabels.has(item.label));
 
   return e(
     Layout,
@@ -558,7 +560,7 @@ function HomePage(props) {
         { className: "section-heading" },
         e("div", null, e("h2", null, "Live place indicators"), e("p", null, "Current field conditions derived from live location-aware weather feeds."))
       ),
-      e(MetricGrid, { items: data.metrics })
+      e(MetricGrid, { items: homeMetrics })
     ),
     e(
       "section",
