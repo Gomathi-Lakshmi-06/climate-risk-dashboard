@@ -1,87 +1,62 @@
-<h1 align="center">🌍 Climate Risk & Disaster Management Dashboard</h1>
+# 🌍 Climate Risk & Disaster Management Dashboard
 
 <p align="center">
-A full-stack, real-time climate intelligence platform for monitoring environmental risks and enabling effective disaster response.
+  <strong>A real-time climate intelligence platform for localized risk analysis and disaster response coordination.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" />
+  <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
 </p>
 
 ---
 
 ## 🚀 Overview
 
-The **Climate Risk & Disaster Management Dashboard** is a real-time web application designed to monitor climate conditions and assess risks such as heatwaves and floods.
+The **Climate Risk & Disaster Management Dashboard** is a full-stack web application that transforms real-time weather data into actionable insights for climate risk assessment and emergency response.
 
-It combines live weather data, risk analytics, and emergency response tools into a unified, user-friendly interface.
-
----
-
-## 🛠️ Tech Stack
-
-* **Frontend:** HTML, CSS, React (CDN-based)
-* **Backend:** Node.js
-* **APIs:** Open-Meteo, OpenWeather
-* **Maps & Location:** OpenStreetMap, Google Maps
+It enables users to monitor environmental conditions, evaluate risk levels, and coordinate response efforts through a unified and interactive interface.
 
 ---
 
 ## ✨ Key Features
 
-* 📊 Real-time climate monitoring (temperature, humidity, UV, rainfall, wind)
-* 🌡️ Heat & Flood risk classification
-* 📍 Location-based data with live city search
-* ⚠️ Disaster response & incident reporting system
-* 🗺️ Integrated maps and emergency resource access
-* 🔁 Dynamic frontend with API-driven updates
+### 🌡️ Climate Risk Analytics
+
+* Real-time monitoring of temperature, humidity, rainfall, UV index, and wind
+* Automated classification of **Heat Risk** and **Flood Risk** (Low, Moderate, High)
+* Short-term forecasting (3-day outlook) for proactive decision-making
+
+### 📊 Interactive Dashboard
+
+* Structured climate indicator grid for quick insights
+* Alert queue highlighting critical conditions
+* Forecast shift analysis for upcoming environmental changes
+
+### 🚑 Emergency Response System
+
+* Community-driven **incident reporting system**
+* Integration of emergency contacts and relief locations
+* Real-time situational updates for coordinated response
+
+### 📍 Location Intelligence
+
+* Supports both manual city input and precise geolocation
+* Persistent location context across all modules
+* Hyper-local climate insights for targeted monitoring
 
 ---
 
-## 🖥️ Application Screenshots
+## 🛠️ Tech Stack
 
-### 🏠 Home & Live Operations
-
-* Central control panel for climate monitoring
-* Displays current risk levels and live weather summary
-
-![Home](./screenshots/home.png)
-
----
-
-### 📊 Dashboard – Climate Posture Analysis
-
-* Detailed breakdown of climate indicators
-* Heat index, humidity, UV index, rainfall, wind
-* Alert queue and forecast shift insights
-
-![Dashboard](./screenshots/dashboard.png)
-
----
-
-### 🌡️ Heat & Risk Indicators
-
-* Real-time heat exposure analysis
-* Priority alerts for safety recommendations
-
-*(Integrated within dashboard view)*
-
----
-
-### 🌊 Flood Risk Center
-
-* Rainfall tracking and probability analysis
-* Flood readiness indicators
-* Recommended precautionary actions
-
-![Flood](./screenshots/flood.png)
-
----
-
-### 🚑 Emergency Coordination Hub
-
-* Emergency helplines and contacts
-* Nearby hospitals and relief centers
-* Incident reporting system with backend integration
-* Map-based response support
-
-![Response](./screenshots/response.png)
+| Layer    | Technology                 |
+| -------- | -------------------------- |
+| Frontend | HTML, CSS, React (CDN)     |
+| Backend  | Node.js                    |
+| APIs     | Open-Meteo, OpenWeather    |
+| Maps     | OpenStreetMap, Google Maps |
 
 ---
 
@@ -89,59 +64,52 @@ It combines live weather data, risk analytics, and emergency response tools into
 
 ```bash
 .
-├── server.js        # Backend server & API routes
-├── data.js          # Shared data logic
+├── server.js        # Backend API server
+├── data.js          # Data processing & logic
 ├── app.js           # React frontend logic
-├── styles.css       # Styling
+├── styles.css       # UI styling
 ├── index.html       # Home page
-├── dashboard.html   # Dashboard
-├── heat.html        # Heat risk
-├── flood.html       # Flood risk
-├── response.html    # Disaster response
+├── dashboard.html   # Dashboard view
+├── heat.html        # Heat risk module
+├── flood.html       # Flood risk module
+├── response.html    # Emergency response hub
 ```
 
 ---
 
 ## 🔗 API Endpoints
 
-* `GET /api/overview`
-* `GET /api/risks/heat`
-* `GET /api/risks/flood`
-* `GET /api/response`
-* `GET /api/cities`
-* `GET /api/incidents`
-* `POST /api/incidents`
+| Method | Endpoint           | Description             |
+| ------ | ------------------ | ----------------------- |
+| GET    | `/api/overview`    | Climate summary         |
+| GET    | `/api/risks/heat`  | Heat risk data          |
+| GET    | `/api/risks/flood` | Flood risk data         |
+| GET    | `/api/response`    | Response dashboard data |
+| GET    | `/api/incidents`   | Retrieve incidents      |
+| POST   | `/api/incidents`   | Submit incident         |
 
 ---
 
 ## 🌦️ Data Sources
 
-* Open-Meteo Forecast API → real-time weather metrics
-* Open-Meteo Geocoding API → location resolution
-* OpenWeather API → official alerts *(optional)*
-* OpenStreetMap → map visualization
-* Google Maps → navigation links
+* **Open-Meteo** → Weather forecasts and geolocation
+* **OpenWeather** → Official alerts *(optional)*
+* **OpenStreetMap** → Mapping and spatial data
+* **Google Maps** → Navigation links
 
 ---
 
 ## ▶️ Getting Started
 
-### 1. Clone the Repository
-
 ```bash
 git clone <your-repo-link>
 cd climate-risk-dashboard
-```
-
-### 2. Run the Server
-
-```bash
 npm start
 ```
 
-### 3. Open in Browser
+Open in browser:
 
-```text
+```
 http://localhost:3000
 ```
 
@@ -155,12 +123,12 @@ OPENWEATHER_API_KEY=your_api_key
 
 ---
 
-## 📌 Future Enhancements
+## 📈 Future Enhancements
 
-* Persistent database for incident storage
+* Persistent database integration
 * User authentication system
-* Advanced predictive analytics
-* Cloud deployment (AWS / Vercel / Render)
+* Predictive analytics for climate risks
+* Cloud deployment
 
 ---
 
@@ -168,6 +136,7 @@ OPENWEATHER_API_KEY=your_api_key
 
 * Navya
 * Gomathi Lakshmi
+
 ---
 
 ## 📜 License
