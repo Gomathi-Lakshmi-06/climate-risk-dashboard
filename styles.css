@@ -387,7 +387,7 @@ label {
 }
 
 .grid.metrics {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .grid.two {
@@ -976,12 +976,19 @@ button:disabled {
   }
 }
 
+@media (max-width: 1200px) {
+  .grid.metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 980px) {
   .hero {
     grid-template-columns: 1fr;
     padding: 26px;
   }
 
+  .grid.metrics,
   .kpi-strip.compact,
   .hero-risk-grid {
     grid-template-columns: 1fr;
