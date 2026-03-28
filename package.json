@@ -1,0 +1,10 @@
+{
+  "name": "climate-risk-dashboard",
+  "version": "1.0.0",
+  "description": "Climate risk dashboard with a Node backend and React-enhanced frontend pages.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT"
+}
