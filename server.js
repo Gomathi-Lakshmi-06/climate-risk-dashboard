@@ -9,7 +9,6 @@ const HOST = process.env.HOST || "127.0.0.1";
 const ROOT = __dirname;
 const CACHE_MS = siteConfig.refreshMinutes * 60 * 1000;
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || "";
-const INDIA_ISO3 = "IND";
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -26,6 +25,7 @@ const contentTypes = {
 const liveCache = {
   entries: new Map()
 };
+const locationCache = new Map();
 
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
@@ -82,26 +82,18 @@ function normalizePlace(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
-function cacheKeyFor(place, latitude, longitude, options = {}) {
-  const flags = [
-    `relief:${options.includeRelief ? 1 : 0}`,
-    `forecast:${options.includeForecast === false ? 0 : 1}`,
-
-    `official:${options.includeOfficialAlerts ? 1 : 0}`,
-    `current:${options.includeCurrentWeather === false ? 0 : 1}`
-  ].join("|");
+function cacheKeyFor(place, latitude, longitude, includeRelief) {
   if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-    return `coords:${latitude.toFixed(4)},${longitude.toFixed(4)}|${flags}`;
+    return `coords:${latitude.toFixed(4)},${longitude.toFixed(4)}|relief:${includeRelief ? 1 : 0}`;
   }
-  return `place:${normalizePlace(place).toLowerCase()}|${flags}`;
+  return `place:${normalizePlace(place).toLowerCase()}|relief:${includeRelief ? 1 : 0}`;
 }
 
-async function safeFetch(promise, fallbackValue) {
-  try {
-    return await promise;
-  } catch {
-    return fallbackValue;
+function cacheKeyForLocation(place, latitude, longitude) {
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return `coords:${latitude.toFixed(4)},${longitude.toFixed(4)}`;
   }
+  return `place:${normalizePlace(place).toLowerCase()}`;
 }
 
 async function fetchJson(url, options = {}) {
@@ -134,36 +126,6 @@ async function fetchJson(url, options = {}) {
   }
 }
 
-async function fetchText(url, options = {}) {
-  const controller = new AbortController();
-  const timeoutMs = options.timeoutMs || 8000;
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "climate-risk-dashboard/1.0",
-        ...(options.headers || {})
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Upstream request failed with ${response.status}`);
-    }
-
-    return response.text();
-  } catch (error) {
-    if (error.name === "AbortError") {
-      throw new Error(`Upstream request timed out after ${timeoutMs}ms`);
-    }
-    throw error;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 function formatLocationLabel(location) {
   return [location.name, location.admin1, location.country].filter(Boolean).join(", ");
 }
@@ -182,14 +144,14 @@ async function findLocationMatches(query) {
   }
 
   const geocodeUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
-  geocodeUrl.searchParams.set("name", normalized.split(",")[0].trim());
+  geocodeUrl.searchParams.set("name", normalized);
   geocodeUrl.searchParams.set("count", "6");
   geocodeUrl.searchParams.set("language", "en");
   geocodeUrl.searchParams.set("format", "json");
   geocodeUrl.searchParams.set("countryCode", "IN");
 
   try {
-    const geocode = await fetchJson(geocodeUrl, { timeoutMs: 2200 });
+    const geocode = await fetchJson(geocodeUrl, { timeoutMs: 1500 });
     const results = (Array.isArray(geocode.results) ? geocode.results : []).filter(
       (item) => String(item.country_code || item.country || "").toLowerCase() === "in" || String(item.country || "").toLowerCase() === "india"
     );
@@ -207,26 +169,21 @@ async function findLocationMatches(query) {
   nominatimUrl.searchParams.set("addressdetails", "1");
   nominatimUrl.searchParams.set("countrycodes", "in");
 
-  try {
-    const results = await fetchJson(nominatimUrl, { timeoutMs: 2200 });
-    return (Array.isArray(results) ? results : []).map((item) => ({
-      name:
-        item.address?.suburb ||
-        item.address?.neighbourhood ||
-        item.address?.city_district ||
-        item.address?.town ||
-        item.address?.city ||
-        item.display_name?.split(",")[0] ||
-        normalized,
-      admin1: item.address?.state || item.address?.county || "",
-      country: item.address?.country || "",
-      latitude: Number(item.lat),
-      longitude: Number(item.lon)
-    }));
-  } catch (error) {
-    console.warn("Nominatim place search fallback failed:", error.message);
-    return [];
-  }
+  const results = await fetchJson(nominatimUrl, { timeoutMs: 1200 });
+  return (Array.isArray(results) ? results : []).map((item) => ({
+    name:
+      item.address?.suburb ||
+      item.address?.neighbourhood ||
+      item.address?.city_district ||
+      item.address?.town ||
+      item.address?.city ||
+      item.display_name?.split(",")[0] ||
+      normalized,
+    admin1: item.address?.state || item.address?.county || "",
+    country: item.address?.country || "",
+    latitude: Number(item.lat),
+    longitude: Number(item.lon)
+  }));
 }
 
 async function reverseGeocode(latitude, longitude) {
@@ -235,7 +192,7 @@ async function reverseGeocode(latitude, longitude) {
   reverseUrl.searchParams.set("lon", String(longitude));
   reverseUrl.searchParams.set("format", "jsonv2");
   reverseUrl.searchParams.set("zoom", "14");
-  return fetchJson(reverseUrl, { timeoutMs: 2200 });
+  return fetchJson(reverseUrl, { timeoutMs: 1200 });
 }
 
 function fallbackLocation(place) {
@@ -262,12 +219,17 @@ function fallbackLocation(place) {
 
 async function resolveLocation(place, latitude, longitude) {
   const normalizedPlace = normalizeSearchQuery(place);
+  const cacheKey = cacheKeyForLocation(normalizedPlace || siteConfig.city, latitude, longitude);
+  const cachedLocation = locationCache.get(cacheKey);
+  if (cachedLocation) {
+    return cachedLocation;
+  }
 
   if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
     try {
       const reverse = await reverseGeocode(latitude, longitude);
       const address = reverse.address || {};
-      return {
+      const resolved = {
         name:
           address.suburb ||
           address.neighbourhood ||
@@ -280,14 +242,20 @@ async function resolveLocation(place, latitude, longitude) {
         latitude,
         longitude
       };
+      locationCache.set(cacheKey, resolved);
+      return resolved;
     } catch (error) {
       console.warn("Reverse geocoding fallback:", error.message);
-      return fallbackLocation(normalizedPlace || siteConfig.city);
+      const fallback = fallbackLocation(normalizedPlace || siteConfig.city);
+      locationCache.set(cacheKey, fallback);
+      return fallback;
     }
   }
 
   const matches = await findLocationMatches(normalizedPlace || siteConfig.city);
-  return matches[0] || fallbackLocation(normalizedPlace || siteConfig.city);
+  const resolved = matches[0] || fallbackLocation(normalizedPlace || siteConfig.city);
+  locationCache.set(cacheKey, resolved);
+  return resolved;
 }
 
 function weatherLabel(code) {
@@ -335,19 +303,6 @@ function determineHeatRisk(current, daily) {
   return "Low";
 }
 
-function determinePeakHeatRisk(daily) {
-  const temps = Array.isArray(daily.temperature_2m_max) ? daily.temperature_2m_max : [];
-  const uvs = Array.isArray(daily.uv_index_max) ? daily.uv_index_max : [];
-  let peak = "Low";
-  for (let i = 0; i < Math.min(3, Math.max(temps.length, uvs.length)); i++) {
-    const t = temps[i] || 0;
-    const u = uvs[i] || 0;
-    if (t >= 38 || u >= 10) return "High";
-    if (t >= 34 || u >= 7) peak = "Moderate";
-  }
-  return peak;
-}
-
 function determineFloodRisk(current, daily) {
   const rainNow = (current.precipitation || 0) + (current.rain || 0) + (current.showers || 0);
   const rainDay = daily.precipitation_sum?.[0] || 0;
@@ -385,6 +340,7 @@ function determinePeakFloodRisk(daily) {
 
   return peak;
 }
+
 
 function buildTrendValue(today, tomorrow, suffix) {
   if (typeof today !== "number" || typeof tomorrow !== "number") {
@@ -512,10 +468,10 @@ function finalizeReliefResults(elements, latitude, longitude, mode) {
     .sort((a, b) => a.distanceKm - b.distanceKm);
 
   if (mode === "citywide") {
-    return sampleDistributedFacilities(mapped, 10).sort((a, b) => a.distanceKm - b.distanceKm);
+    return sampleDistributedFacilities(mapped, 5).sort((a, b) => a.distanceKm - b.distanceKm);
   }
 
-  return mapped.slice(0, 10);
+  return mapped.slice(0, 5);
 }
 
 async function fetchNearbyReliefLocations(latitude, longitude, mode = "nearby") {
@@ -542,7 +498,7 @@ out center tags;
     try {
       const payload = await fetchJson(endpoint, {
         method: "POST",
-        timeoutMs: 1800,
+        timeoutMs: 3500,
         headers: {
           "Content-Type": "text/plain;charset=UTF-8"
         },
@@ -565,57 +521,58 @@ out center tags;
 async function fallbackReliefSearch(locationLabel, latitude, longitude, mode = "nearby") {
   const categories = ["hospital", "clinic", "community centre", "shelter", "school"];
   const dedupe = new Set();
-  const settled = await Promise.allSettled(
+  const collected = [];
+
+  const searchResults = await Promise.allSettled(
     categories.map(async (category) => {
       const searchUrl = new URL("https://nominatim.openstreetmap.org/search");
       searchUrl.searchParams.set("q", mode === "citywide" ? `${category} in ${locationLabel}` : `${category} near ${locationLabel}`);
       searchUrl.searchParams.set("format", "jsonv2");
-      searchUrl.searchParams.set("limit", mode === "citywide" ? "6" : "4");
+      searchUrl.searchParams.set("limit", "5");
       searchUrl.searchParams.set("addressdetails", "1");
 
-      const results = await fetchJson(searchUrl, { timeoutMs: 1200 });
-      return { category, results: Array.isArray(results) ? results : [] };
+      return {
+        category,
+        results: await fetchJson(searchUrl, { timeoutMs: 2500 })
+      };
     })
   );
 
-  const collected = [];
-
-  for (const result of settled) {
-    if (result.status !== "fulfilled") {
+  for (const entry of searchResults) {
+    if (entry.status !== "fulfilled") {
+      console.warn("Fallback relief search unavailable:", entry.reason?.message || entry.reason);
       continue;
     }
 
-    const { category, results } = result.value;
-    for (const item of results) {
-        const key = `${item.display_name}-${item.lat}-${item.lon}`;
-        if (dedupe.has(key)) {
-          continue;
-        }
-        dedupe.add(key);
+    const { category, results } = entry.value;
+    for (const item of Array.isArray(results) ? results : []) {
+      const key = `${item.display_name}-${item.lat}-${item.lon}`;
+      if (dedupe.has(key)) {
+        continue;
+      }
+      dedupe.add(key);
 
-        const resultLat = Number(item.lat);
-        const resultLon = Number(item.lon);
-        const distance = distanceKm(latitude, longitude, resultLat, resultLon);
+      const resultLat = Number(item.lat);
+      const resultLon = Number(item.lon);
+      const distance = distanceKm(latitude, longitude, resultLat, resultLon);
 
-        collected.push({
-          id: key,
-          name: item.display_name.split(",")[0],
-          address: item.display_name,
-          type: category[0].toUpperCase() + category.slice(1),
-          status: mode === "nearby" ? "Nearby" : "Citywide",
-          latitude: resultLat,
-          longitude: resultLon,
-          distanceKm: distance,
-          distanceLabel: formatDistance(distance)
-        });
+      collected.push({
+        id: key,
+        name: item.display_name.split(",")[0],
+        address: item.display_name,
+        type: category[0].toUpperCase() + category.slice(1),
+        status: mode === "nearby" ? "Nearby" : "Citywide",
+        latitude: resultLat,
+        longitude: resultLon,
+        distanceKm: distance,
+        distanceLabel: formatDistance(distance)
+      });
     }
   }
 
   const sorted = collected.sort((a, b) => a.distanceKm - b.distanceKm);
-  return mode === "citywide" ? sampleDistributedFacilities(sorted, 10).sort((a, b) => a.distanceKm - b.distanceKm) : sorted.slice(0, 10);
+  return mode === "citywide" ? sampleDistributedFacilities(sorted, 5).sort((a, b) => a.distanceKm - b.distanceKm) : sorted.slice(0, 5);
 }
-
-
 
 async function fetchOpenWeatherCurrent(latitude, longitude) {
   if (!OPENWEATHER_API_KEY) {
@@ -629,7 +586,7 @@ async function fetchOpenWeatherCurrent(latitude, longitude) {
   url.searchParams.set("appid", OPENWEATHER_API_KEY);
 
   try {
-    return await fetchJson(url, { timeoutMs: 2200 });
+    return await fetchJson(url);
   } catch (error) {
     console.warn("OpenWeather current unavailable:", error.message);
     return null;
@@ -649,7 +606,7 @@ async function fetchOpenWeatherAlerts(latitude, longitude) {
   url.searchParams.set("appid", OPENWEATHER_API_KEY);
 
   try {
-    const payload = await fetchJson(url, { timeoutMs: 2200 });
+    const payload = await fetchJson(url);
     return Array.isArray(payload.alerts) ? payload.alerts : [];
   } catch (error) {
     console.warn("OpenWeather alerts unavailable:", error.message);
@@ -657,10 +614,7 @@ async function fetchOpenWeatherAlerts(latitude, longitude) {
   }
 }
 
-
-
 function classifyHeatBand(apparentTemperature) {
-
   if (apparentTemperature >= 40) {
     return "Extreme";
   }
@@ -680,165 +634,84 @@ function classifyFloodBand(probability, rainTotal) {
   return "Routine";
 }
 
+function estimateFieldReadiness(current, heatRisk, floodRisk) {
+  const base = 92;
+  const heatPenalty = heatRisk === "High" ? 7 : heatRisk === "Moderate" ? 3 : 0;
+  const floodPenalty = floodRisk === "High" ? 8 : floodRisk === "Moderate" ? 4 : 0;
+  const windPenalty = (current.wind_gusts_10m || 0) > 35 ? 3 : 0;
+  return `${Math.max(72, base - heatPenalty - floodPenalty - windPenalty)}%`;
+}
+
+function dominantRisk(heatRisk, floodRisk) {
+  if (heatRisk === "High" || floodRisk === "High") {
+    return heatRisk === "High" ? "Heat" : "Flood";
+  }
+  if (heatRisk === "Moderate" || floodRisk === "Moderate") {
+    return heatRisk === "Moderate" ? "Heat" : "Flood";
+  }
+  return "Stable";
+}
+
 function buildMetricCards(current, daily, heatRisk, floodRisk) {
-  // Comprehensive set of metrics across both heat and flood domains (8 total)
+  const rainfall = Number(daily.precipitation_sum?.[0] || 0);
   return [
     {
-      id: "airTemperature",
+      id: "temperature",
       label: "Air Temperature",
       value: `${Math.round(current.temperature_2m)} C`,
-      status: heatRisk,
-      detail: "Current near-surface air temperature"
-    },
-    {
-      id: "heatIndex",
-      label: "Heat Index",
-      value: `${Math.round(current.apparent_temperature)} C`,
-      status: heatRisk,
-      detail: "Daily apparent temperature index"
+      detail: `Feels like ${Math.round(current.apparent_temperature)} C`,
+      status: heatRisk
     },
     {
       id: "humidity",
       label: "Humidity",
       value: `${Math.round(current.relative_humidity_2m)}%`,
-      status: normalizeStatus(current.relative_humidity_2m),
-      detail: "Relative atmospheric moisture"
+      detail: weatherLabel(current.weather_code),
+      status: normalizeStatus(current.relative_humidity_2m)
     },
     {
-      id: "uvIndex",
-      label: "UV Index",
-      value: `${Math.round(daily.uv_index_max?.[0] || 0)}`,
-      status: daily.uv_index_max?.[0] >= 8 ? "High" : daily.uv_index_max?.[0] >= 3 ? "Moderate" : "Low",
-      detail: "Daily peak UV intensity today"
-    },
-    {
-      id: "rainToday",
+      id: "rainfall",
       label: "Rain Today",
-      value: `${daily.precipitation_sum?.[0].toFixed(1)} mm`,
-      status: floodRisk,
-      detail: "Forecast daily precipitation total"
+      value: `${rainfall.toFixed(1)} mm`,
+      detail: `${daily.precipitation_probability_max?.[0] || 0}% chance of measurable rain`,
+      status: floodRisk
     },
     {
-      id: "rainProb",
-      label: "Rain Probability",
-      value: `${daily.precipitation_probability_max?.[0] || 0}%`,
-      status: floodRisk,
-      detail: "Peak chance of measurable rainfall"
+      id: "wind",
+      label: "Wind Speed",
+      value: `${Math.round(current.wind_speed_10m)} km/h`,
+      detail: `Gusts up to ${Math.round(current.wind_gusts_10m || current.wind_speed_10m)} km/h`,
+      status: normalizeStatus(current.wind_speed_10m)
     },
     {
-      id: "currentPrecip",
-      label: "Current Precip",
-      value: `${(current.precipitation || 0).toFixed(1)} mm`,
-      status: floodRisk,
-      detail: "Instant precipitation rate"
+      id: "pressure",
+      label: "Pressure",
+      value: `${Math.round(current.surface_pressure)} hPa`,
+      detail: `${Math.round(current.cloud_cover)}% cloud cover`,
+      status: "Low"
     },
     {
-      id: "windMax",
-      label: "Wind Max",
-      value: `${Math.round(daily.wind_speed_10m_max?.[0] || 0)} km/h`,
-      status: "Routine",
-      detail: "Expected peak daily gusts"
+      id: "uv",
+      label: "UV Index Max",
+      value: `${Math.round(daily.uv_index_max?.[0] || 0)}`,
+      detail: "Peak sunlight stress for today",
+      status: heatRisk
+    },
+    {
+      id: "heat-band",
+      label: "Heat Band",
+      value: classifyHeatBand(current.apparent_temperature || current.temperature_2m),
+      detail: "Derived from live apparent temperature",
+      status: heatRisk
+    },
+    {
+      id: "field-readiness",
+      label: "Field Readiness",
+      value: estimateFieldReadiness(current, heatRisk, floodRisk),
+      detail: `Dominant operational risk: ${dominantRisk(heatRisk, floodRisk)}`,
+      status: heatRisk === "High" || floodRisk === "High" ? "High" : "Low"
     }
   ];
-}
-
-function buildDynamicHeatHotspots(live) {
-  const current = live.forecast.current;
-  const daily = live.forecast.daily;
-  return [
-    `Apparent temperature is ${Math.round(current.apparent_temperature)} C in ${live.location.name}.`,
-    `Maximum UV for today is ${Math.round(daily.uv_index_max?.[0] || 0)}.`,
-    `Humidity is ${Math.round(current.relative_humidity_2m)}%, which can intensify heat stress.`,
-    `Wind speed is ${Math.round(current.wind_speed_10m || 0)} km/h with gusts up to ${Math.round(current.wind_gusts_10m || current.wind_speed_10m || 0)} km/h.`,
-    `Surface pressure is ${Math.round(current.surface_pressure || 1013)} hPa, typical for the current thermal band.`,
-    `Cloud cover is currently at ${Math.round(current.cloud_cover || 0)}%, allowing for significant solar radiation.`,
-    `Local diurnal temperature range is expected to stay within a ${Math.round(daily.temperature_2m_max?.[0] - daily.temperature_2m_min?.[0] || 10)} degree band today.`
-  ];
-}
-
-function buildDynamicHeatActions(live, riskLevel) {
-  const actions = [];
-  const current = live.forecast.current;
-  const daily = live.forecast.daily;
-
-  if (riskLevel !== "Low") {
-    actions.push("Reduce outdoor exposure in the afternoon and move strenuous field work to cooler hours.");
-  }
-  if ((daily.uv_index_max?.[0] || 0) >= 7) {
-    actions.push("Push hydration, shade breaks, and sun protection because UV stress is elevated today.");
-  }
-  if ((current.relative_humidity_2m || 0) >= 70) {
-    actions.push("Watch for sticky heat conditions, especially for elderly residents and outdoor staff.");
-  }
-
-  actions.push("Ensure emergency cooling centers are staffed and community hydration points are fully operational.");
-  actions.push("Issue heat stroke awareness alerts to vulnerable populations and outdoor workers.");
-  actions.push("Limit construction and energy-intensive outdoor maintenance during peak sun hours (11 AM - 4 PM).");
-  actions.push("Check in on neighbors who live alone or may have limited air conditioning access.");
-
-  if (!actions.length) {
-    actions.push("Current heat conditions are manageable; continue routine hydration and temperature monitoring.");
-  }
-
-  return actions;
-}
-
-function buildDynamicFloodHotspots(live) {
-  const current = live.forecast.current;
-  const daily = live.forecast.daily;
-  return [
-    `Forecast rainfall today is ${Number(daily.precipitation_sum?.[0] || 0).toFixed(1)} mm.`,
-    `Rain probability today is ${daily.precipitation_probability_max?.[0] || 0}%.`,
-    `Current precipitation is ${Number(current.precipitation || 0).toFixed(1)} mm.`,
-    `Wind speed is ${Math.round(current.wind_speed_10m || 0)} km/h with daily maximums near ${Math.round(daily.wind_speed_10m_max?.[0] || 0)} km/h.`,
-    `Atmospheric pressure is ${Math.round(current.surface_pressure || 1013)} hPa, coinciding with current condensation pressure.`,
-    `Local sky coverage is ${Math.round(current.cloud_cover || 0)}%, which is consistent with the rainfall probability model.`,
-    `Daily precipitation peak intensity is expected to be ${Number(daily.precipitation_sum?.[0] / 3 || 0).toFixed(1)} mm/hr if rain cells persist.`
-  ];
-}
-
-function buildDynamicFloodActions(live, riskLevel, forecastRisk) {
-  const actions = [];
-  const daily = live.forecast.daily;
-
-  if (riskLevel !== "Low" || forecastRisk !== "Low") {
-    actions.push("Keep drainage-sensitive roads and low-lying corridors under active watch.");
-  }
-  if ((daily.precipitation_probability_max?.[0] || 0) >= 55) {
-    actions.push("Prepare route advisories and waterlogging updates if rain cells intensify.");
-  }
-  if ((daily.precipitation_sum?.[1] || 0) > (daily.precipitation_sum?.[0] || 0)) {
-    actions.push("Review tomorrow's rainfall increase and pre-position response equipment before conditions worsen.");
-  }
-
-  actions.push("Check street-level pumping stations and ensure manual crews are ready for rapid debris clearance.");
-  actions.push("Pre-position medical supplies and emergency food packets in identified flood-vulnerable neighborhoods.");
-  actions.push("Advise commuters to avoid chronically waterlogged subway tunnels and low-lying underpasses.");
-  actions.push("Pre-deploy sandbags and temporary barriers at known overflow points in residential zones.");
-  if (!actions.length) {
-    actions.push("Flood conditions are currently manageable; continue routine monitoring of rainfall and drainage.");
-  }
-
-  return actions;
-}
-
-function buildResponseChecklist(live, overview, incidents) {
-  const priorities = [];
-
-  priorities.push(`Refresh live field status for ${live.location.name} every ${siteConfig.refreshMinutes} minutes.`);
-  priorities.push(`Verify ${live.nearbyReliefLocations.length} mapped relief locations and keep route access visible on the response board.`);
-
-  if (overview.heatRisk !== "Low") {
-    priorities.push("Keep hydration, cooling support, and medical observation ready for heat-sensitive groups.");
-  }
-  if (overview.peakFloodRisk !== "Low") {
-    priorities.push("Monitor low-lying roads and drainage corridors because short-range flood pressure is elevated.");
-  }
-  if (incidents.length) {
-    priorities.push(`Track ${incidents.length} live incident records and keep map links ready for dispatch follow-up.`);
-  }
-
-  return priorities.slice(0, 6);
 }
 
 function buildLiveSignals(live, heatRisk, floodRisk) {
@@ -910,15 +783,7 @@ function buildCombinedIncidents(live, heatRisk, floodRisk) {
 
 async function getLiveContext(place, latitude, longitude, options = {}) {
   const includeRelief = Boolean(options.includeRelief);
-  const includeForecast = options.includeForecast !== false;
-  const includeOfficialAlerts = Boolean(options.includeOfficialAlerts);
-  const includeCurrentWeather = options.includeCurrentWeather !== false;
-  const cacheKey = cacheKeyFor(place || siteConfig.city, latitude, longitude, {
-    includeRelief,
-    includeForecast,
-    includeOfficialAlerts,
-    includeCurrentWeather
-  });
+  const cacheKey = cacheKeyFor(place || siteConfig.city, latitude, longitude, includeRelief);
   const cached = liveCache.entries.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.payload;
@@ -936,60 +801,55 @@ async function getLiveContext(place, latitude, longitude, options = {}) {
   const reliefMode = Number.isFinite(latitude) && Number.isFinite(longitude) ? "nearby" : "citywide";
 
   const forecastUrl = new URL("https://api.open-meteo.com/v1/forecast");
-  if (includeForecast) {
-    forecastUrl.searchParams.set("latitude", String(resolvedLatitude));
-    forecastUrl.searchParams.set("longitude", String(resolvedLongitude));
-    forecastUrl.searchParams.set("timezone", siteConfig.timezone);
-    forecastUrl.searchParams.set("forecast_days", "3");
-    forecastUrl.searchParams.set(
-      "current",
-      [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "apparent_temperature",
-        "precipitation",
-        "rain",
-        "showers",
-        "wind_speed_10m",
-        "wind_gusts_10m",
-        "surface_pressure",
-        "cloud_cover",
-        "weather_code"
-      ].join(",")
-    );
-    forecastUrl.searchParams.set(
-      "daily",
-      [
-        "weather_code",
-        "temperature_2m_max",
-        "temperature_2m_min",
-        "precipitation_sum",
-        "precipitation_probability_max",
-        "uv_index_max",
-        "wind_speed_10m_max"
-      ].join(",")
-    );
-  }
+  forecastUrl.searchParams.set("latitude", String(resolvedLatitude));
+  forecastUrl.searchParams.set("longitude", String(resolvedLongitude));
+  forecastUrl.searchParams.set("timezone", siteConfig.timezone);
+  forecastUrl.searchParams.set("forecast_days", "3");
+  forecastUrl.searchParams.set(
+    "current",
+    [
+      "temperature_2m",
+      "relative_humidity_2m",
+      "apparent_temperature",
+      "precipitation",
+      "rain",
+      "showers",
+      "wind_speed_10m",
+      "wind_gusts_10m",
+      "surface_pressure",
+      "cloud_cover",
+      "weather_code"
+    ].join(",")
+  );
+  forecastUrl.searchParams.set(
+    "daily",
+    [
+      "weather_code",
+      "temperature_2m_max",
+      "temperature_2m_min",
+      "precipitation_sum",
+      "precipitation_probability_max",
+      "uv_index_max",
+      "wind_speed_10m_max"
+    ].join(",")
+  );
 
   const [forecast, officialAlerts, openWeatherCurrent, nearbyReliefLocations] = await Promise.all([
-    includeForecast ? fetchJson(forecastUrl, { timeoutMs: 3200 }) : Promise.resolve(null),
-    includeOfficialAlerts ? safeFetch(fetchOpenWeatherAlerts(resolvedLatitude, resolvedLongitude), []) : Promise.resolve([]),
-    includeForecast && includeCurrentWeather ? safeFetch(fetchOpenWeatherCurrent(resolvedLatitude, resolvedLongitude), null) : Promise.resolve(null),
+    fetchJson(forecastUrl),
+    fetchOpenWeatherAlerts(resolvedLatitude, resolvedLongitude),
+    fetchOpenWeatherCurrent(resolvedLatitude, resolvedLongitude),
     includeRelief
-      ? safeFetch(
-          (async () => {
-            const direct = await fetchNearbyReliefLocations(resolvedLatitude, resolvedLongitude, reliefMode);
-            if (direct.length > 0) {
-              return direct;
-            }
-            return fallbackReliefSearch(locationLabel, resolvedLatitude, resolvedLongitude, reliefMode);
-          })(),
-          []
-        )
+      ? (async () => {
+          const direct = await fetchNearbyReliefLocations(resolvedLatitude, resolvedLongitude, reliefMode);
+          if (direct.length > 0) {
+            return direct;
+          }
+          return fallbackReliefSearch(locationLabel, resolvedLatitude, resolvedLongitude, reliefMode);
+        })()
       : Promise.resolve([])
   ]);
 
-  if (forecast && openWeatherCurrent?.main) {
+  if (openWeatherCurrent?.main) {
     forecast.current.temperature_2m = openWeatherCurrent.main.temp;
     forecast.current.apparent_temperature = openWeatherCurrent.main.feels_like;
     forecast.current.relative_humidity_2m = openWeatherCurrent.main.humidity;
@@ -1023,13 +883,13 @@ async function getLiveContext(place, latitude, longitude, options = {}) {
   return payload;
 }
 
-function buildOverviewPayload(live, type = "home") {
+function buildOverviewPayload(live) {
   const current = live.forecast.current;
   const daily = live.forecast.daily;
   const heatRisk = determineHeatRisk(current, daily);
   const floodRisk = determineFloodRisk(current, daily);
   const peakFloodRisk = determinePeakFloodRisk(daily);
-  const incidents = listUserReports();
+  const incidents = buildCombinedIncidents(live, heatRisk, floodRisk);
 
   return {
     location: formatLocationLabel(live.location),
@@ -1041,7 +901,6 @@ function buildOverviewPayload(live, type = "home") {
     lastUpdated: live.fetchedAt,
     refreshMinutes: siteConfig.refreshMinutes,
     hero: content.hero,
-    summary: `${weatherLabel(current.weather_code)}. ${Math.round(current.temperature_2m)} C and ${daily.precipitation_sum?.[0]?.toFixed(1) || 0} mm forecast rainfall today.`,
     metrics: buildMetricCards(current, daily, heatRisk, floodRisk),
     alerts: [
       {
@@ -1121,7 +980,6 @@ function buildHeatPayload(live) {
     pageTitle: "Heat Risk Center",
     selectedCity: live.requestedPlace,
     riskLevel,
-    forecastRisk: determinePeakHeatRisk(daily),
     summary: `Live temperature and UV readings indicate ${riskLevel.toLowerCase()} to elevated heat stress potential across ${live.location.name}.`,
     indicators: [
       { label: "Heat Index", value: `${Math.round(current.apparent_temperature)} C`, note: "Current apparent temperature" },
@@ -1129,8 +987,8 @@ function buildHeatPayload(live) {
       { label: "Humidity", value: `${Math.round(current.relative_humidity_2m)}%`, note: "Humidity directly affects how hot it feels" },
       { label: "UV Index Max", value: `${Math.round(daily.uv_index_max?.[0] || 0)}`, note: "Expected peak UV today" }
     ],
-    hotspots: buildDynamicHeatHotspots(live),
-    recommendations: buildDynamicHeatActions(live, riskLevel),
+    hotspots: content.heatHotspots,
+    recommendations: content.heatActions,
     forecast: daily.time.map((day, index) => ({
       day: index === 0 ? "Today" : index === 1 ? "Tomorrow" : "Day 3",
       condition: weatherLabel(daily.weather_code[index]),
@@ -1165,8 +1023,8 @@ function buildFloodPayload(live) {
       { label: "Current Precipitation", value: `${(current.precipitation || 0).toFixed(1)} mm`, note: "Instant precipitation rate" },
       { label: "Wind Max", value: `${Math.round(daily.wind_speed_10m_max?.[0] || 0)} km/h`, note: "Stronger gusts can worsen road conditions" }
     ],
-    hotspots: buildDynamicFloodHotspots(live),
-    recommendations: buildDynamicFloodActions(live, riskLevel, forecastRisk),
+    hotspots: content.floodHotspots,
+    recommendations: content.floodActions,
     forecast: daily.time.map((day, index) => ({
       day: index === 0 ? "Today" : index === 1 ? "Tomorrow" : "Day 3",
       condition: weatherLabel(daily.weather_code[index]),
@@ -1185,17 +1043,16 @@ function buildFloodPayload(live) {
 
 function buildResponsePayload(live) {
   const overview = buildOverviewPayload(live);
-  const incidents = listUserReports();
-  const shelters = live.nearbyReliefLocations || [];
+  const incidents = buildCombinedIncidents(live, overview.heatRisk, overview.floodRisk);
 
   return {
     ...content.response,
     selectedCity: live.requestedPlace,
-    shelters,
-    reliefStatus: shelters.length
+    shelters: live.nearbyReliefLocations,
+    reliefStatus: live.nearbyReliefLocations.length
       ? live.reliefMode === "nearby"
-        ? `Showing ${shelters.length} nearest mapped facilities around your precise location in ${formatLocationLabel(live.location)}.`
-        : `Showing ${shelters.length} mapped relief points across ${formatLocationLabel(live.location)}.`
+        ? `Showing ${live.nearbyReliefLocations.length} nearest mapped facilities around your precise location in ${formatLocationLabel(live.location)}.`
+        : `Showing ${live.nearbyReliefLocations.length} mapped relief points across ${formatLocationLabel(live.location)}.`
       : "Live relief locations are temporarily unavailable from the map provider.",
     reliefScope: live.reliefMode === "nearby" ? "Precise location" : "Citywide coverage",
     operationalStatus: {
@@ -1207,24 +1064,7 @@ function buildResponsePayload(live) {
     location: overview.location,
     source: live.sources,
     lastUpdated: live.fetchedAt,
-    checklist: buildResponseChecklist(live, overview, incidents),
     incidents
-  };
-}
-
-function buildResponseReliefPayload(live) {
-  const shelters = live.nearbyReliefLocations || [];
-
-  return {
-    location: formatLocationLabel(live.location),
-    shelters,
-    reliefStatus: shelters.length
-      ? live.reliefMode === "nearby"
-        ? `Showing ${shelters.length} nearest mapped facilities around your precise location in ${formatLocationLabel(live.location)}.`
-        : `Showing ${shelters.length} mapped relief points across ${formatLocationLabel(live.location)}.`
-      : "Live relief locations are temporarily unavailable from the map provider.",
-    reliefScope: live.reliefMode === "nearby" ? "Precise location" : "Citywide coverage",
-    lastUpdated: live.fetchedAt
   };
 }
 
@@ -1275,16 +1115,9 @@ async function handleApi(req, res, pathname) {
       return true;
     }
 
-
     if (req.method === "GET" && pathname === "/api/response") {
-      const live = await getLiveContext(place, latitude, longitude, { includeRelief: false });
+      const live = await getLiveContext(place, latitude, longitude, { includeRelief: true });
       sendJson(res, 200, buildResponsePayload(live));
-      return true;
-    }
-
-    if (req.method === "GET" && pathname === "/api/response-relief") {
-      const live = await getLiveContext(place, latitude, longitude, { includeRelief: true, includeForecast: false, includeCurrentWeather: false });
-      sendJson(res, 200, buildResponseReliefPayload(live));
       return true;
     }
 
@@ -1312,21 +1145,23 @@ async function handleApi(req, res, pathname) {
       return true;
     }
 
-    if (req.method === "POST" && pathname === "/api/incidents/delete") {
+    const incidentMatch = pathname.match(/^\/api\/incidents\/(\d+)$/);
+    if (req.method === "DELETE" && incidentMatch) {
       const payload = await parseBody(req);
-      const { id } = payload;
+      const review = String(payload.review || "").trim();
 
-      if (!id) {
-        sendJson(res, 400, { error: "Incident ID is required" });
+      if (!review) {
+        sendJson(res, 400, { error: "A short review is required before removing the incident" });
         return true;
       }
 
-      const removed = removeUserReport(id);
-      if (removed) {
-        sendJson(res, 200, { message: "Incident successfully removed" });
-      } else {
-        sendJson(res, 404, { error: "Incident record not found" });
+      const incident = removeUserReport(incidentMatch[1], review);
+      if (!incident) {
+        sendJson(res, 404, { error: "Incident not found" });
+        return true;
       }
+
+      sendJson(res, 200, { message: "Incident removed", incident });
       return true;
     }
 
