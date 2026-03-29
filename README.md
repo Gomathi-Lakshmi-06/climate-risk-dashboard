@@ -127,8 +127,8 @@ http://localhost:3000
 
 ## 👥 Team
 
-* Navya
-* Gomathi Lakshmi
+* Navya A
+* Gomathi Lakshmi G
 
 ---
 
