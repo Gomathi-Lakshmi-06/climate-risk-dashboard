@@ -1,7 +1,7 @@
 const e = React.createElement;
 const CITY_STORAGE_KEY = "climate-risk-selected-city";
 const PRECISE_LOCATION_KEY = "climate-risk-precise-location";
-const API_CACHE_PREFIX = "climate-risk-api-cache:v2:";
+const API_CACHE_PREFIX = "climate-risk-api-cache:";
 const API_CACHE_TTL_MS = 30 * 60 * 1000;
 
 function cacheKeyForUrl(url) {
@@ -106,7 +106,7 @@ function usePreciseLocation() {
   return { location, status, requestPreciseLocation, clearPreciseLocation };
 }
 
-function buildApiUrl(path, city, preciseLocation, type) {
+function buildApiUrl(path, city, preciseLocation) {
   const url = new URL(path, window.location.origin);
   if (city) {
     url.searchParams.set("city", city);
@@ -114,9 +114,6 @@ function buildApiUrl(path, city, preciseLocation, type) {
   if (preciseLocation?.latitude && preciseLocation?.longitude) {
     url.searchParams.set("lat", preciseLocation.latitude);
     url.searchParams.set("lon", preciseLocation.longitude);
-  }
-  if (type) {
-    url.searchParams.set("type", type);
   }
   return `${url.pathname}${url.search}`;
 }
@@ -158,7 +155,7 @@ function useFetch(url, refreshMs) {
         .catch((error) => {
           if (active) {
             setState((current) => ({
-              loading: false,
+              loading: current.data ? false : true,
               data: current.data,
               error: error.message
             }));
@@ -171,9 +168,11 @@ function useFetch(url, refreshMs) {
 
     return () => {
       active = false;
-      if (timer) window.clearInterval(timer);
+      if (timer) {
+        window.clearInterval(timer);
+      }
     };
-  }, [url]);
+  }, [url, refreshMs]);
 
   return state;
 }
@@ -269,19 +268,6 @@ function LocationPicker(props) {
     setOpen(false);
   }
 
-  function bestMatchedLocation() {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!results.length) {
-      return null;
-    }
-
-    return (
-      results.find((city) => city.label.toLowerCase() === normalizedQuery) ||
-      results.find((city) => city.label.toLowerCase().startsWith(normalizedQuery)) ||
-      results[0]
-    );
-  }
-
   return e(
     "div",
     { className: "city-picker" },
@@ -305,11 +291,6 @@ function LocationPicker(props) {
           type: "button",
           className: "city-apply-button",
           onClick: () => {
-            const matched = bestMatchedLocation();
-            if (matched) {
-              selectLocation(matched);
-              return;
-            }
             props.onSelect(query.trim() || "Chennai");
             props.onClearPrecise();
             setOpen(false);
@@ -395,18 +376,6 @@ function Layout(props) {
         "div",
         { className: "topbar-controls" },
         e(
-          "div",
-          { className: "topbar-location" },
-          e(LocationPicker, {
-            selectedCity: props.selectedCity,
-            onSelect: props.onSelectCity,
-            preciseLocation: props.preciseLocation,
-            onRequestPrecise: props.onRequestPreciseLocation,
-            onClearPrecise: props.onClearPreciseLocation,
-            locationStatus: props.locationStatus
-          })
-        ),
-        e(
           "nav",
           { className: "nav-links", "aria-label": "Main navigation" },
           navItems.map((item) =>
@@ -420,10 +389,27 @@ function Layout(props) {
               item.label
             )
           )
+        ),
+        e(
+          "div",
+          { className: "topbar-location" },
+          e(LocationPicker, {
+            selectedCity: props.selectedCity,
+            onSelect: props.onSelectCity,
+            preciseLocation: props.preciseLocation,
+            onRequestPrecise: props.onRequestPreciseLocation,
+            onClearPrecise: props.onClearPreciseLocation,
+            locationStatus: props.locationStatus
+          })
         )
       )
     ),
-    props.children
+    props.children,
+    e(
+      "footer",
+      { className: "footer" },
+      e("div", null, props.footerText || "Live weather and response context refresh automatically.")
+    )
   );
 }
 
@@ -446,26 +432,11 @@ function Hero(props) {
 function MetricCard(metric) {
   return e(
     "article",
-    { className: `card reveal ${metric.featured ? "metric-card featured" : "metric-card"}`, key: metric.id || metric.label },
+    { className: "card reveal", key: metric.id || metric.label },
     e("div", { className: "card-label" }, metric.label),
     e("div", { className: "metric-value" }, metric.value),
     e("div", { className: `status-pill ${severityClass(metric.status)}` }, metric.status),
     e("p", { className: "muted" }, metric.detail || metric.note)
-  );
-}
-
-function MetricGrid(props) {
-  const items = props.items || [];
-  const columnClass = items.length === 8 ? "grid-4" : items.length === 6 ? "grid-3" : "grid-2";
-  
-  return e(
-    "div",
-    { className: "metrics-stack" },
-    e(
-      "div",
-      { className: `grid metrics ${columnClass}` },
-      items.map((item, index) => e(MetricCard, { ...item, key: item.id || index, featured: index < 2 }))
-    )
   );
 }
 
@@ -499,6 +470,30 @@ function ForecastList(props) {
   );
 }
 
+function SourceBadge(props) {
+  return e(
+    "div",
+    { className: "source-badge" },
+    `Last updated ${formatDate(props.updatedAt)} | auto refresh every ${props.refreshMinutes} min`
+  );
+}
+
+function LoadingPanel(props) {
+  return e(
+    "div",
+    { className: "loading-state" },
+    e(
+      "div",
+      { className: "loading-orb", "aria-hidden": "true" },
+      e("span", { className: "loading-ring loading-ring--one" }),
+      e("span", { className: "loading-ring loading-ring--two" }),
+      e("span", { className: "loading-core" })
+    ),
+    e("p", { className: "loading-title" }, props.title),
+    e("p", { className: "loading-caption" }, props.caption || "Pulling live climate signals and preparing the view.")
+  );
+}
+
 function pageLayoutProps(props, data, page, footerText) {
   return {
     page,
@@ -517,7 +512,7 @@ function HomePage(props) {
   const overview = useFetch(buildApiUrl("/api/overview", props.selectedCity, props.preciseLocation), 600000);
 
   if (overview.loading && !overview.data) {
-    return e(Layout, pageLayoutProps(props, null, "index"), e("div", { className: "loading-state" }, "Loading climate overview..."));
+    return e(Layout, pageLayoutProps(props, null, "index"), e(LoadingPanel, { title: "Loading climate overview..." }));
   }
 
   if (overview.error && !overview.data) {
@@ -525,8 +520,6 @@ function HomePage(props) {
   }
 
   const data = overview.data;
-  const homeMetricLabels = new Set(["Air Temperature", "Humidity", "Rain Probability", "Wind Max"]);
-  const homeMetrics = (data.metrics || []).filter((item) => homeMetricLabels.has(item.label));
 
   return e(
     Layout,
@@ -544,10 +537,11 @@ function HomePage(props) {
         aside: e(
           "div",
           { className: "hero-aside-card" },
+          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes }),
           e("div", { className: "hero-risk-grid" },
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Heat"), e("strong", null, data.heatRisk)),
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
-            e("div", { className: "hero-risk-tile full" }, e("span", { className: "muted" }, "Now"), e("strong", null, data.summary))
+            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood outlook"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
+            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Incidents"), e("strong", null, String(data.incidentCount)))
           )
         )
       }
@@ -558,9 +552,10 @@ function HomePage(props) {
       e(
         "div",
         { className: "section-heading" },
-        e("div", null, e("h2", null, "Live place indicators"), e("p", null, "Current field conditions derived from live location-aware weather feeds."))
+        e("div", null, e("h2", null, "Live place indicators"), e("p", null, "Current field conditions derived from live location-aware weather feeds.")),
+        e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes })
       ),
-      e(MetricGrid, { items: homeMetrics })
+      e("div", { className: "grid metrics" }, data.metrics.map(MetricCard))
     ),
     e(
       "section",
@@ -576,10 +571,10 @@ function HomePage(props) {
 }
 
 function DashboardPage(props) {
-  const overview = useFetch(buildApiUrl("/api/overview", props.selectedCity, props.preciseLocation, "dashboard"), 600000);
+  const overview = useFetch(buildApiUrl("/api/overview", props.selectedCity, props.preciseLocation), 600000);
 
   if (overview.loading && !overview.data) {
-    return e(Layout, pageLayoutProps(props, null, "dashboard"), e("div", { className: "loading-state" }, "Loading live dashboard..."));
+    return e(Layout, pageLayoutProps(props, null, "dashboard"), e(LoadingPanel, { title: "Loading live dashboard..." }));
   }
 
   if (overview.error && !overview.data) {
@@ -595,20 +590,23 @@ function DashboardPage(props) {
       Hero,
       {
         eyebrow: "Operations dashboard",
-        title: "Climate posture analysis",
-        description: "Track live conditions, scan the next 48 to 72 hours for temperature and rainfall shifts, and review the location currently driving the dashboard data.",
+        title: "Real-time urban climate posture",
+        description: "Track live conditions, scan the next 72 hours for temperature and rainfall shifts, and review the exact place currently driving the dashboard.",
         aside: e(
           "div",
           { className: "hero-aside-card" },
-          e("div", { className: "hero-risk-grid" },
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Heat"), e("strong", null, data.heatRisk)),
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
-            e("div", { className: "hero-risk-tile full" }, e("span", { className: "muted" }, "Now"), e("strong", null, data.summary))
+          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes }),
+          e(
+            "div",
+            { className: "kpi-strip compact" },
+            e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Heat posture"), e("strong", null, data.heatRisk)),
+            e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Flood outlook"), e("strong", null, data.peakFloodRisk || data.floodRisk)),
+            e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Live incidents"), e("strong", null, String(data.incidentCount)))
           )
         )
       }
     ),
-    e("section", { className: "section" }, e(MetricGrid, { items: data.metrics })),
+    e("section", { className: "section" }, e("div", { className: "grid metrics" }, data.metrics.map(MetricCard))),
     e(
       "section",
       { className: "section" },
@@ -650,6 +648,7 @@ function DashboardPage(props) {
                 ["Heat posture", data.heatRisk],
                 ["Flood today", data.floodRisk],
                 ["Flood next 3 days", data.peakFloodRisk || data.floodRisk],
+                ["Live incidents", String(data.incidentCount)],
                 ["Last refresh", formatDate(data.lastUpdated)]
               ].map(([label, value]) =>
                 e(
@@ -671,7 +670,7 @@ function RiskPage(props) {
   const response = useFetch(buildApiUrl(`/api/risks/${props.type}`, props.selectedCity, props.preciseLocation), 600000);
 
   if (response.loading && !response.data) {
-    return e(Layout, pageLayoutProps(props, null, props.type), e("div", { className: "loading-state" }, `Loading ${props.type} risk data...`));
+    return e(Layout, pageLayoutProps(props, null, props.type), e(LoadingPanel, { title: `Loading ${props.type} risk data...` }));
   }
 
   if (response.error && !response.data) {
@@ -692,14 +691,17 @@ function RiskPage(props) {
         aside: e(
           "div",
           { className: "hero-aside-card" },
+          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: 10 }),
           e("div", { className: "hero-risk-grid" },
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Current risk"), e("strong", null, data.riskLevel)),
-            e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "3-day outlook"), e("strong", null, data.forecastRisk || data.riskLevel))
+            props.type === "flood"
+              ? e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "3-day outlook"), e("strong", null, data.forecastRisk || data.riskLevel))
+              : e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Refresh"), e("strong", null, "10 min"))
           )
         )
       }
     ),
-    e("section", { className: "section" }, e(MetricGrid, { items: data.indicators })),
+    e("section", { className: "section" }, e("div", { className: "grid metrics" }, data.indicators.map(MetricCard))),
     e(
       "section",
       { className: "section" },
@@ -709,7 +711,7 @@ function RiskPage(props) {
         e(
           "div",
           { className: "panel reveal" },
-          e("h3", null, props.type === "heat" ? "Live heat observations" : "Live flood observations"),
+          e("h3", null, "Priority hotspots"),
           e(
             "ul",
             { className: "list" },
@@ -734,7 +736,7 @@ function RiskPage(props) {
 
 function ResponsePage(props) {
   const response = useFetch(buildApiUrl("/api/response", props.selectedCity, props.preciseLocation), 600000);
-  const relief = useFetch(buildApiUrl("/api/response-relief", props.selectedCity, props.preciseLocation), 600000);
+  const [selectedShelterIndex, setSelectedShelterIndex] = React.useState(0);
   const [form, setForm] = React.useState({
     title: "",
     location: "",
@@ -743,10 +745,15 @@ function ResponsePage(props) {
   });
   const [submitState, setSubmitState] = React.useState({ loading: false, message: "", error: "" });
   const [incidents, setIncidents] = React.useState([]);
+  const [removeState, setRemoveState] = React.useState({ loadingId: null, message: "", error: "" });
 
   React.useEffect(() => {
     if (response.data) {
       setIncidents(response.data.incidents || []);
+      setSelectedShelterIndex((current) =>
+        Math.min(current, Math.max(0, (response.data.shelters || []).length - 1))
+      );
+      setRemoveState({ loadingId: null, message: "", error: "" });
     }
   }, [response.data]);
 
@@ -778,8 +785,54 @@ function ResponsePage(props) {
       });
   }
 
+  function onRemoveIncident(incident) {
+    const review = window.prompt("Before removing this incident, share a short review about the work done to resolve it.");
+    if (review === null) {
+      return;
+    }
+
+    const trimmedReview = review.trim();
+    if (!trimmedReview) {
+      setRemoveState({
+        loadingId: null,
+        message: "",
+        error: "Please add a short review before removing the incident."
+      });
+      return;
+    }
+
+    const confirmed = window.confirm("Remove this incident from the board now?");
+    if (!confirmed) {
+      return;
+    }
+
+    setRemoveState({ loadingId: incident.id, message: "", error: "" });
+
+    fetch(`/api/incidents/${incident.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ review: trimmedReview })
+    })
+      .then((res) => res.json().then((body) => ({ ok: res.ok, body })))
+      .then(({ ok, body }) => {
+        if (!ok) {
+          throw new Error(body.error || "Could not remove incident");
+        }
+
+        setIncidents((current) => current.filter((item) => item.id !== incident.id));
+        setRemoveState({
+          loadingId: null,
+          message: "Incident removed after recording the completion review.",
+          error: ""
+        });
+      })
+      .catch((error) => {
+        setRemoveState({ loadingId: null, message: "", error: error.message });
+      });
+  }
+
   if (response.loading && !response.data) {
-    return e(Layout, pageLayoutProps(props, null, "response"), e("div", { className: "loading-state" }, "Loading response hub..."));
+    return e(Layout, pageLayoutProps(props, null, "response"), e(LoadingPanel, { title: "Loading response hub..." }));
   }
 
   if (response.error && !response.data) {
@@ -787,10 +840,7 @@ function ResponsePage(props) {
   }
 
   const data = response.data;
-  const reliefData = relief.data;
-  const shelters = reliefData?.shelters || [];
-  const reliefStatus = reliefData?.reliefStatus || "Matching the selected place to live relief-map data...";
-  const reliefScope = reliefData?.reliefScope || data.reliefScope || "Citywide coverage";
+  const selectedShelter = data.shelters[selectedShelterIndex] || data.shelters[0];
 
   return e(
     Layout,
@@ -804,6 +854,7 @@ function ResponsePage(props) {
         aside: e(
           "div",
           { className: "hero-aside-card" },
+          e(SourceBadge, { updatedAt: data.lastUpdated, refreshMinutes: data.refreshMinutes }),
           e("div", { className: "hero-risk-grid" },
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Heat"), e("strong", null, data.operationalStatus.heatRisk)),
             e("div", { className: "hero-risk-tile" }, e("span", { className: "muted" }, "Flood"), e("strong", null, data.operationalStatus.floodRisk)),
@@ -819,22 +870,23 @@ function ResponsePage(props) {
         "div",
         { className: "kpi-strip response-overview reveal" },
         e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Selected place"), e("strong", null, data.location)),
-        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Relief coverage"), e("strong", null, reliefScope)),
-        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Nearby relief points"), e("strong", null, relief.loading && !reliefData ? "Loading..." : String(shelters.length))),
-        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "User reports"), e("strong", null, String(incidents.length)))
+        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Relief coverage"), e("strong", null, data.reliefScope || "Citywide coverage")),
+        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Nearby relief points"), e("strong", null, String(data.shelters.length))),
+        e("div", { className: "mini-stat" }, e("span", { className: "muted" }, "Live source"), e("strong", null, data.source?.relief || "Live search"))
       ),
       e(
         "div",
         { className: "panel reveal section-note" },
-        e("p", null, reliefStatus)
+        e("p", null, data.reliefStatus || "Nearby places are being fetched from live map data for the selected place.")
       ),
+      e(
+        "div",
+        { className: "grid two response-panels" },
         e(
           "div",
-          { className: "grid two response-balance" },
-          e(
-            "div",
-            { className: "panel reveal response-left-panel" },
-            e("h3", null, "Emergency contacts"),
+          { className: "panel reveal response-panel response-panel--contacts" },
+          e("h3", null, "Emergency contacts"),
+          e("p", { className: "contact-panel-note muted" }, "Choose the contact based on the kind of help needed so response teams can reach the right place faster."),
           e(
             "div",
             { className: "contact-list" },
@@ -842,12 +894,112 @@ function ResponsePage(props) {
               e(
                 "article",
                 { className: "contact-card", key: contact.label },
-                e("div", null, e("h4", null, contact.label), e("p", null, contact.description)),
+                e(
+                  "div",
+                  { className: "contact-copy" },
+                  e("h4", null, contact.label),
+                  e("p", null, contact.description),
+                  contact.helpText ? e("p", { className: "contact-help" }, contact.helpText) : null
+                ),
                 e("a", { href: contact.href, className: "link-button primary contact-button" }, contact.value)
               )
             )
+          )
+        ),
+        e(
+          "div",
+          { className: "panel reveal response-panel response-panel--relief" },
+          e(
+            "div",
+            { className: "section-heading" },
+            e("div", null, e("h2", null, "Relief locations"), e("p", null, "These are live mapped response points based on your searched place or precise device location.")),
+            selectedShelter
+              ? e(
+                  "a",
+                  {
+                    href: buildMapUrl(selectedShelter.latitude, selectedShelter.longitude),
+                    target: "_blank",
+                    rel: "noreferrer",
+                    className: "link-button ghost"
+                  },
+                  "Open directions"
+                )
+              : null
           ),
-          e("div", { className: "section-divider" }),
+          data.shelters.length
+            ? e(
+                "div",
+                { className: "shelter-list" },
+                data.shelters.map((shelter, index) =>
+                  e(
+                    "article",
+                    {
+                      key: shelter.id,
+                      className: `shelter-card ${index === selectedShelterIndex ? "active" : ""}`,
+                      onClick: () => setSelectedShelterIndex(index)
+                    },
+                    e(
+                      "div",
+                      null,
+                      e("h4", null, shelter.name),
+                      e("p", null, shelter.address),
+                      e(
+                        "p",
+                        { className: "muted" },
+                        data.reliefScope === "Precise location"
+                          ? `${shelter.type} | ${shelter.distanceLabel} away`
+                          : shelter.type
+                      )
+                    ),
+                    e(
+                      "div",
+                      { className: "shelter-actions" },
+                      e("span", { className: `status-pill ${severityClass(shelter.status)}` }, shelter.status),
+                      e(
+                        "a",
+                        {
+                          href: buildMapUrl(shelter.latitude, shelter.longitude),
+                          target: "_blank",
+                          rel: "noreferrer",
+                          className: "link-button ghost small",
+                          onClick: (event) => event.stopPropagation()
+                        },
+                        "Open map"
+                      )
+                    )
+                  )
+                )
+              )
+            : e(
+                "div",
+                { className: "empty-state" },
+                e("p", null, "No nearby mapped relief locations were returned for this place right now."),
+                e("p", { className: "muted" }, data.reliefStatus || "Try a more specific locality or use precise location for better results.")
+              ),
+          selectedShelter
+            ? e(
+                "div",
+                { className: "map-panel" },
+                e("iframe", {
+                  title: selectedShelter.name,
+                  src: buildMapEmbedUrl(selectedShelter.latitude, selectedShelter.longitude),
+                  className: "map-frame",
+                  loading: "lazy"
+                })
+              )
+            : null
+        )
+      )
+    ),
+    e(
+      "section",
+      { className: "section" },
+      e(
+        "div",
+        { className: "grid two" },
+        e(
+          "div",
+          { className: "panel reveal" },
           e("h3", null, "Report an incident"),
           e(
             "form",
@@ -872,103 +1024,64 @@ function ResponsePage(props) {
             e("button", { type: "submit", disabled: submitState.loading }, submitState.loading ? "Submitting..." : "Submit incident"),
             submitState.message ? e("p", { style: { color: "var(--green)", margin: 0 } }, submitState.message) : null,
             submitState.error ? e("p", { style: { color: "var(--red)", margin: 0 } }, submitState.error) : null,
-            e("div", { className: "section-divider" }),
-            e("h3", null, "Reported incidents"),
-            incidents.length
-              ? e(
-                  "div",
-                  { className: "list" },
-                  incidents.map((incident) =>
-                    e(
-                      "article",
-                      { className: "list-item", key: incident.id },
-                      e("div", { className: `status-pill ${severityClass(incident.severity)}` }, incident.severity),
-                      e("h4", { style: { marginTop: "12px", marginBottom: "8px" } }, incident.title),
-                      e("p", null, incident.description),
-                      e("p", { className: "muted", style: { marginTop: "10px", marginBottom: "12px" } }, `${incident.location} | ${formatDate(incident.reportedAt)}`),
-                      e(
-                        "button",
-                        {
-                          type: "button",
-                          className: "link-button small",
-                          style: { color: "var(--red)", border: "1px solid rgba(255, 100, 100, 0.2)", padding: "4px 10px" },
-                          onClick: () => {
-                            if (!confirm("Permanently remove this rectified incident from the live board?")) return;
-                            fetch("/api/incidents/delete", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ id: incident.id })
-                            }).then(() => window.location.reload());
-                          }
-                        },
-                        "Mark as rectified / Delete"
-                      )
-                    )
-                  )
-                )
-              : e("div", { className: "list-item" }, e("p", null, "No incident reports have been submitted for this session yet."))
+            removeState.message ? e("p", { style: { color: "var(--green)", margin: 0 } }, removeState.message) : null,
+            removeState.error ? e("p", { style: { color: "var(--red)", margin: 0 } }, removeState.error) : null
           )
         ),
         e(
           "div",
-          { className: "panel reveal response-right-panel" },
+          { className: "panel reveal" },
+          e("h3", null, "Response checklist"),
           e(
+            "ul",
+            { className: "list" },
+            data.checklist.map((item) => e("li", { className: "list-item", key: item }, e("p", null, item)))
+          )
+        )
+      )
+    ),
+    e(
+      "section",
+      { className: "section" },
+      e("div", { className: "section-heading" }, e("div", null, e("h2", null, "Incident board"), e("p", null, "Live weather signals, official alerts, and your submitted reports."))),
+      incidents.length
+        ? e(
             "div",
-            { className: "section-heading" },
-            e("div", null, e("h2", null, "Relief locations"), e("p", null, "These are live mapped response points based on your searched place or precise device location."))
-          ),
-          relief.loading && !reliefData
-            ? e("div", { className: "empty-state" }, e("p", null, "Loading relief locations for the matched place..."))
-            : shelters.length
-            ? e(
-                "div",
-                { className: "shelter-list" },
-                shelters.map((shelter) =>
+            { className: "grid two" },
+            incidents.map((incident) =>
+              e(
+                "article",
+                { className: "card reveal", key: incident.id },
+                e("div", { className: `status-pill ${severityClass(incident.severity)}` }, incident.severity),
+                e("h3", null, incident.title),
+                e("p", null, incident.description),
+                e("p", { className: "muted", style: { marginTop: "10px" } }, `${incident.location} | ${incident.status}`),
+                e(
+                  "div",
+                  { className: "action-row compact" },
+                  e("p", { className: "muted" }, `${formatDate(incident.reportedAt)} | ${incident.source}`),
                   e(
-                    "article",
-                    {
-                      key: shelter.id,
-                      className: "shelter-card"
-                    },
-                    e(
-                      "div",
-                      null,
-                      e("h4", null, shelter.name),
-                      e("p", null, shelter.address),
-                      e(
-                        "p",
-                        { className: "muted" },
-                        reliefScope === "Precise location"
-                          ? `${shelter.type} | ${shelter.distanceLabel} away`
-                          : shelter.type
-                      )
-                    ),
-                    e(
-                      "div",
-                      { className: "shelter-actions" },
-                      e("span", { className: `status-pill ${severityClass(shelter.status)}` }, shelter.status),
-                      e(
-                        "a",
-                        {
-                          href: buildMapUrl(shelter.latitude, shelter.longitude),
-                          target: "_blank",
-                          rel: "noreferrer",
-                          className: "link-button ghost small"
-                        },
-                        "Open map"
-                      )
-                    )
+                    "div",
+                    { className: "incident-actions" },
+                    e("a", { href: buildQueryMapUrl(incident.location), target: "_blank", rel: "noreferrer", className: "link-button ghost small" }, "Open map"),
+                    incident.source === "User report"
+                      ? e(
+                          "button",
+                          {
+                            type: "button",
+                            className: "danger-button small",
+                            onClick: () => onRemoveIncident(incident),
+                            disabled: removeState.loadingId === incident.id
+                          },
+                          removeState.loadingId === incident.id ? "Removing..." : "Remove"
+                        )
+                      : null
                   )
                 )
               )
-            : e(
-                "div",
-                { className: "empty-state" },
-                e("p", null, "No nearby mapped relief locations were returned for this place right now."),
-                e("p", { className: "muted" }, reliefStatus || "Try a more specific locality or use precise location for better results.")
-              )
-        )
-      )
+            )
+          )
+        : e("div", { className: "empty-state" }, "No live incidents are available right now.")
     )
   );
 }
