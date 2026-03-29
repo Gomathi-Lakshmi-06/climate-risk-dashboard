@@ -5,7 +5,8 @@ const { URL } = require("url");
 const { siteConfig, content, listUserReports, addUserReport, removeUserReport } = require("./data");
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || "127.0.0.1";
+const HOST = "0.0.0.0";
+
 const ROOT = __dirname;
 const CACHE_MS = siteConfig.refreshMinutes * 60 * 1000;
 const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || "";
